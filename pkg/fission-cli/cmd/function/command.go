@@ -131,7 +131,7 @@ func Commands() *cobra.Command {
 	wrapper.SetFlags(logsCmd, flag.FlagSet{
 		Required: []flag.Flag{flag.FnName},
 		Optional: []flag.Flag{
-			flag.FnLogFollow, flag.FnLogReverseQuery, flag.FnLogCount,
+			flag.FnLogFollow, flag.FnLogReverseQuery, flag.FnLogCount, flag.FnLogFromNow, flag.FnLogWithTime,
 			flag.FnLogDetail, flag.FnLogPod, flag.NamespaceFunction, flag.FnLogDBType},
 	})
 

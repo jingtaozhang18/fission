@@ -75,17 +75,26 @@ func (opts *LogSubCommand) do(input cli.Input) error {
 	ctx := context.Background()
 
 	go func(ctx context.Context, requestChan, responseChan chan struct{}) {
-		t := time.Unix(0, 0*int64(time.Millisecond))
+		// from now to output log
+		var t time.Time
+		if input.Bool(flagkey.FnLogFromNow) {
+			t = time.Now()
+		} else {
+			t = time.Unix(0, 0*int64(time.Millisecond))
+		}
+		podName := "none"
+		var cstSh, _ = time.LoadLocation("Asia/Shanghai") //上海
 		for {
 			select {
 			case <-requestChan:
 				logFilter := logdb.LogFilter{
-					Pod:         fnPod,
-					Function:    f.ObjectMeta.Name,
-					FuncUid:     string(f.ObjectMeta.UID),
-					Since:       t,
-					Reverse:     logReverseQuery,
-					RecordLimit: recordLimit,
+					Pod:               fnPod,
+					Function:          f.ObjectMeta.Name,
+					FunctionNamespace: f.ObjectMeta.Namespace,
+					FuncUid:           string(f.ObjectMeta.UID),
+					Since:             t,
+					Reverse:           logReverseQuery,
+					RecordLimit:       recordLimit,
 				}
 				logEntries, err := logDB.GetLogs(logFilter)
 				if err != nil {
@@ -94,13 +103,26 @@ func (opts *LogSubCommand) do(input cli.Input) error {
 					return
 				}
 				for _, logEntry := range logEntries {
-					if input.Bool(flagkey.FnLogDetail) {
-						fmt.Printf("Timestamp: %s\nNamespace: %s\nFunction Name: %s\nFunction ID: %s\nPod: %s\nContainer: %s\nStream: %s\nLog: %s\n---\n",
-							logEntry.Timestamp, logEntry.Namespace, logEntry.FuncName, logEntry.FuncUid, logEntry.Pod, logEntry.Container, logEntry.Stream, logEntry.Message)
-					} else {
-						fmt.Printf("[%s] %s\n", logEntry.Timestamp, logEntry.Message)
-					}
 					t = logEntry.Timestamp
+					if podName != logEntry.Pod {
+						podName = logEntry.Pod
+						fmt.Printf("\n**** logs from %v ****\n\n", podName)
+					}
+					if input.Bool(flagkey.FnLogDetail) {
+						if input.Bool(flagkey.FnLogWithTime) {
+							fmt.Printf("Timestamp: %s\nNamespace: %s\nFunction Name: %s\nFunction ID: %s\nPod: %s\nContainer: %s\nStream: %s\nLog: %s\n---\n",
+								logEntry.Timestamp.In(cstSh).Format("2006-01-02 15:04:05"), logEntry.Namespace, logEntry.FuncName, logEntry.FuncUid, logEntry.Pod, logEntry.Container, logEntry.Stream, logEntry.Message)
+						} else {
+							fmt.Printf("Namespace: %s\nFunction Name: %s\nFunction ID: %s\nPod: %s\nContainer: %s\nStream: %s\nLog: %s\n---\n",
+								logEntry.Namespace, logEntry.FuncName, logEntry.FuncUid, logEntry.Pod, logEntry.Container, logEntry.Stream, logEntry.Message)
+						}
+					} else {
+						if input.Bool(flagkey.FnLogWithTime) {
+							fmt.Printf("[%s] %s\n", logEntry.Timestamp.In(cstSh).Format("2006-01-02 15:04:05"), logEntry.Message)
+						} else {
+							fmt.Printf("%s\n", logEntry.Message)
+						}
+					}
 				}
 				responseChan <- struct{}{}
 			case <-ctx.Done():

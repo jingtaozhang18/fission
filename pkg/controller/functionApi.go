@@ -19,17 +19,18 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"sort"
 	"strconv"
-	"strings"
+	_ "strings"
+	"time"
 
 	"github.com/emicklei/go-restful"
 	restfulspec "github.com/emicklei/go-restful-openapi"
+	"github.com/fission/fission/pkg/fission-cli/logdb"
 	"github.com/go-openapi/spec"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
@@ -108,6 +109,19 @@ func RegisterFunctionRoute(ws *restful.WebService) {
 			Param(ws.QueryParameter("namespace", "Namespace of function").DataType("string").DefaultValue(metav1.NamespaceAll).Required(false)).
 			Produces(restful.MIME_JSON).
 			Returns(http.StatusOK, "Only HTTP status returned", nil))
+
+	ws.Route(
+		ws.GET("/v2/functions/logs/{function}").
+			Doc("Get function logs from pod directly").
+			Metadata(restfulspec.KeyOpenAPITags, tags).
+			To(func(req *restful.Request, resp *restful.Response) {
+				resp.ResponseWriter.WriteHeader(http.StatusOK)
+			}).
+			Param(ws.PathParameter("function", "Function name").DataType("string").DefaultValue("").Required(true)).
+			Param(ws.QueryParameter("namespace", "Namespace of function").DataType("string").DefaultValue(metav1.NamespaceDefault).Required(false)).
+			Produces(restful.MIME_JSON).
+			Writes(restful.MIME_JSON). // on the response
+			Returns(http.StatusOK, "Function Logs", logdb.Logs{}))
 }
 
 func (a *API) FunctionApiList(w http.ResponseWriter, r *http.Request) {
@@ -286,21 +300,17 @@ func (a *API) FunctionPodLogs(w http.ResponseWriter, r *http.Request) {
 	fnName := vars["function"]
 
 	ns := a.extractQueryParamFromRequest(r, "namespace")
-	podNs := "fission-function"
-
 	if len(ns) == 0 {
 		ns = metav1.NamespaceDefault
-	} else if ns != metav1.NamespaceDefault {
-		// If the function namespace is "default", executor
-		// will create function pods under "fission-function".
-		// Otherwise, the function pod will be created under
-		// the same namespace of function.
-		podNs = ns
 	}
+	// since time
+	sinceTimeStr := a.extractQueryParamFromRequest(r, "stime")
+	sinceTime, _ := strconv.ParseInt(sinceTimeStr, 10, 64)
+	podNs := "fission-function"
 
 	f, err := a.fissionClient.CoreV1().Functions(ns).Get(fnName, metav1.GetOptions{})
 	if err != nil {
-		a.respondWithError(w, err)
+		a.respondWithError(w, errors.New(fmt.Sprintf("dont have information of this function %v in namespace %v", fnName, ns)))
 		return
 	}
 
@@ -310,6 +320,11 @@ func (a *API) FunctionPodLogs(w http.ResponseWriter, r *http.Request) {
 		fv1.ENVIRONMENT_NAME:      f.Spec.Environment.Name,
 		fv1.ENVIRONMENT_NAMESPACE: f.Spec.Environment.Namespace,
 	}
+
+	if f.Spec.Environment.Namespace != metav1.NamespaceDefault {
+		podNs = f.Spec.Environment.Namespace
+	}
+
 	podList, err := a.kubernetesClient.CoreV1().Pods(podNs).List(metav1.ListOptions{
 		LabelSelector: labels.Set(selector).AsSelector().String(),
 	})
@@ -327,41 +342,59 @@ func (a *API) FunctionPodLogs(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if len(pods) <= 0 {
-		a.respondWithError(w, errors.New("no active pods found"))
+		_, _ = w.Write(createErrorResponseJsonString("no active pod found"))
 		return
 	}
-
+	snt := time.Unix(sinceTime/1e9, sinceTime%1e9)
+	sn := metav1.NewTime(snt)
 	// get the pod with highest resource version
-	err = getContainerLog(a.kubernetesClient, w, f, &pods[0])
+	podLogOpts := apiv1.PodLogOptions{
+		Container:  f.Spec.Environment.Name,
+		SinceTime:  &sn,
+		Timestamps: true,
+		Follow:     false,
+	}
+	err = getContainerLog(a.kubernetesClient, w, &pods[0], podLogOpts)
 	if err != nil {
 		a.respondWithError(w, errors.Wrapf(err, "error getting container logs"))
 		return
 	}
 }
 
-func getContainerLog(kubernetesClient *kubernetes.Clientset, w http.ResponseWriter, fn *fv1.Function, pod *apiv1.Pod) error {
-	seq := strings.Repeat("=", 35)
+func getContainerLog(kubernetesClient *kubernetes.Clientset, w http.ResponseWriter, pod *apiv1.Pod, podLogOpts apiv1.PodLogOptions) error {
+	podLogsReq := kubernetesClient.CoreV1().Pods(pod.Namespace).GetLogs(pod.ObjectMeta.Name, &podLogOpts)
 
-	for _, container := range pod.Spec.Containers {
-		podLogOpts := apiv1.PodLogOptions{Container: container.Name} // Only the env container, not fetcher
-		podLogsReq := kubernetesClient.CoreV1().Pods(pod.Namespace).GetLogs(pod.ObjectMeta.Name, &podLogOpts)
-
-		podLogs, err := podLogsReq.Stream()
-		if err != nil {
-			return errors.Wrapf(err, "error streaming pod log")
-		}
-
-		msg := fmt.Sprintf("\n%v\nFunction: %v\nEnvironment: %v\nNamespace: %v\nPod: %v\nContainer: %v\nNode: %v\n%v\n", seq,
-			fn.ObjectMeta.Name, fn.Spec.Environment.Name, pod.Namespace, pod.Name, container.Name, pod.Spec.NodeName, seq)
-		w.Write([]byte(msg))
-
-		_, err = io.Copy(w, podLogs)
-		if err != nil {
-			return errors.Wrapf(err, "error copying pod log")
-		}
-
-		podLogs.Close()
+	podLogs, err := podLogsReq.Stream()
+	if err != nil {
+		return errors.Wrapf(err, "error streaming pod log")
 	}
 
+	logs, err := ioutil.ReadAll(podLogs)
+	if err != nil {
+		return errors.Wrapf(err, "error copying pod log")
+	}
+
+	msgMap := map[string]string{
+		"status":    "success",
+		"Pod":       pod.Name,
+		"logs":      string(logs),
+		"timestamp": "",
+	}
+
+	msg, err := json.Marshal(msgMap)
+	_, _ = w.Write(msg)
+	podLogs.Close()
 	return nil
+}
+
+func createErrorResponseJsonString(msg string) []byte {
+	response := map[string]string{
+		"status": "error",
+		"msg":    msg,
+	}
+	rep, err := json.Marshal(response)
+	if err != nil {
+		return []byte("{\"status\":\"down\"}")
+	}
+	return rep
 }
