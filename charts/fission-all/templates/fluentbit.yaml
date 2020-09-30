@@ -131,7 +131,7 @@ spec:
             privileged: true
 {{- end }}
         - name: fluentbit
-{{- if .Values.repository }}
+{{- if .Values.logger.fluentdImageRepository }}
           image: "{{ .Values.logger.fluentdImageRepository }}/{{ .Values.logger.fluentdImage }}:{{ .Values.logger.fluentdImageTag }}"
 {{ else }}
           image: "{{ .Values.logger.fluentdImage }}:{{ .Values.logger.fluentdImageTag }}"
@@ -173,6 +173,10 @@ spec:
               mountPath: /fluent-bit/etc/
               readOnly: true
       serviceAccountName: fission-svc
+      {{- if .Values.pullSecret}}
+      imagePullSecrets:
+        - name: {{ .Values.pullSecret }}
+      {{- end }}
       volumes:
         - name: container-log
           hostPath:

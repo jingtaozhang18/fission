@@ -51,3 +51,19 @@ This template generates the image name for the deployment depending on the value
   {{- end }}
 {{- end }}
 {{- end -}}
+
+{{- define "fission-fetcherImage" -}}
+{{- if .Values.repository -}}
+  {{- if eq .Values.imageTag "" -}}
+    {{ .Values.repository }}/{{ .Values.fetcher.image }}
+  {{- else -}}
+    {{ .Values.repository }}/{{ .Values.fetcher.image }}:{{ .Values.fetcher.imageTag }}
+  {{- end }}
+{{- else -}}
+  {{- if eq .Values.imageTag "" -}}
+    {{ .Values.fetcher.image }}
+  {{- else -}}
+    {{ .Values.fetcher.image }}:{{ .Values.fetcher.imageTag }}
+  {{- end }}
+{{- end }}
+{{- end -}}
