@@ -172,6 +172,10 @@ spec:
           - containerPort: 8888
             name: http
       serviceAccountName: fission-svc
+      {{- if .Values.pullSecret}}
+      imagePullSecrets:
+        - name: {{ .Values.pullSecret }}
+      {{- end }}
       volumes:
       - name: config-volume
         configMap:
@@ -210,11 +214,7 @@ spec:
         args: ["--executorPort", "8888", "--namespace", "{{ .Values.functionNamespace }}"]
         env:
         - name: FETCHER_IMAGE
-        {{- if eq .Values.fetcher.imageTag "" }}
-          value: "{{ .Values.fetcher.image }}"
-        {{- else }}
-          value: "{{ .Values.fetcher.image }}:{{ .Values.fetcher.imageTag }}"
-        {{- end }}
+          value: {{ include "fission-fetcherImage" . | quote }}
         - name: FETCHER_IMAGE_PULL_POLICY
           value: "{{ .Values.pullPolicy }}"
         - name: RUNTIME_IMAGE_PULL_POLICY
@@ -256,6 +256,10 @@ spec:
         - containerPort: 8888
           name: http
       serviceAccountName: fission-svc
+      {{- if .Values.pullSecret}}
+      imagePullSecrets:
+        - name: {{ .Values.pullSecret }}
+      {{- end }}
 {{- if .Values.extraCoreComponentPodConfig }}
 {{ toYaml .Values.extraCoreComponentPodConfig | indent 6 -}}
 {{- end }}
@@ -286,11 +290,7 @@ spec:
         args: ["--builderMgr", "--storageSvcUrl", "http://storagesvc.{{ .Release.Namespace }}", "--envbuilder-namespace", "{{ .Values.builderNamespace }}"]
         env:
         - name: FETCHER_IMAGE
-        {{- if eq .Values.fetcher.imageTag "" }}
-          value: "{{ .Values.fetcher.image }}"
-        {{- else }}
-          value: "{{ .Values.fetcher.image }}:{{ .Values.fetcher.imageTag }}"
-        {{- end }}
+          value: {{ include "fission-fetcherImage" . | quote }}
         - name: FETCHER_IMAGE_PULL_POLICY
           value: "{{ .Values.pullPolicy }}"
         - name: BUILDER_IMAGE_PULL_POLICY
@@ -312,6 +312,10 @@ spec:
         - name: DEBUG_ENV
           value: {{ .Values.debugEnv | quote }}
       serviceAccountName: fission-svc
+      {{- if .Values.pullSecret}}
+      imagePullSecrets:
+        - name: {{ .Values.pullSecret }}
+      {{- end }}
 {{- if .Values.extraCoreComponentPodConfig }}
 {{ toYaml .Values.extraCoreComponentPodConfig | indent 6 -}}
 {{- end }}
@@ -348,6 +352,10 @@ spec:
         - name: DEBUG_ENV
           value: {{ .Values.debugEnv | quote }}
       serviceAccountName: fission-svc
+      {{- if .Values.pullSecret}}
+      imagePullSecrets:
+        - name: {{ .Values.pullSecret }}
+      {{- end }}
 {{- if .Values.extraCoreComponentPodConfig }}
 {{ toYaml .Values.extraCoreComponentPodConfig | indent 6 -}}
 {{- end }}
@@ -403,6 +411,10 @@ spec:
             secretKeyRef:
               name: influxdb
               key: password
+      {{- if .Values.pullSecret}}
+      imagePullSecrets:
+        - name: {{ .Values.pullSecret }}
+      {{- end }}
 {{- if .Values.extraCoreComponentPodConfig }}
 {{ toYaml .Values.extraCoreComponentPodConfig | indent 6 -}}
 {{- end }}
@@ -453,6 +465,10 @@ spec:
         - /heapster
         - --source=kubernetes:https://kubernetes.default
       serviceAccountName: {{ .Release.Namespace }}/fission-svc
+      {{- if .Values.pullSecret}}
+      imagePullSecrets:
+        - name: {{ .Values.pullSecret }}
+      {{- end }}
 {{- end }}
 ---
 apiVersion: apps/v1
@@ -482,6 +498,10 @@ spec:
         - name: DEBUG_ENV
           value: {{ .Values.debugEnv | quote }}
       serviceAccountName: fission-svc
+      {{- if .Values.pullSecret}}
+      imagePullSecrets:
+        - name: {{ .Values.pullSecret }}
+      {{- end }}
 {{- if .Values.extraCoreComponentPodConfig }}
 {{ toYaml .Values.extraCoreComponentPodConfig | indent 6 -}}
 {{- end }}
@@ -621,6 +641,10 @@ spec:
         - name: DEBUG_ENV
           value: {{ .Values.debugEnv | quote }}
       serviceAccountName: fission-svc
+      {{- if .Values.pullSecret}}
+      imagePullSecrets:
+        - name: {{ .Values.pullSecret }}
+      {{- end }}
 {{- if .Values.extraCoreComponentPodConfig }}
 {{ toYaml .Values.extraCoreComponentPodConfig | indent 6 -}}
 {{- end }}
@@ -650,11 +674,7 @@ spec:
     spec:
       containers:
       - name: mqtrigger
-      {{- if eq .Values.imageTag "" }}
-        image: "{{ .Values.image }}"
-      {{- else }}
-        image: "{{ .Values.image }}:{{ .Values.imageTag }}"
-      {{- end }}
+        image: {{ include "fission-bundleImage" . | quote }}
         imagePullPolicy: {{ .Values.pullPolicy }}
         command: ["/fission-bundle"]
         args: ["--mqt", "--routerUrl", "http://router.{{ .Release.Namespace }}"]
@@ -683,6 +703,10 @@ spec:
           mountPath: /etc/fission/secrets
         {{- end }}        
       serviceAccountName: fission-svc
+      {{- if .Values.pullSecret}}
+      imagePullSecrets:
+        - name: {{ .Values.pullSecret }}
+      {{- end }}
       {{- if .Values.kafka.authentication.tls.enabled }}
       volumes:
       - name: kafka-secrets
@@ -769,6 +793,10 @@ spec:
         - name: DEBUG_ENV
           value: {{ .Values.debugEnv | quote }}
       serviceAccountName: fission-svc
+      {{- if .Values.pullSecret}}
+      imagePullSecrets:
+        - name: {{ .Values.pullSecret }}
+      {{- end }}
 {{- if .Values.extraCoreComponentPodConfig }}
 {{ toYaml .Values.extraCoreComponentPodConfig | indent 6 -}}
 {{- end }}
@@ -849,6 +877,10 @@ spec:
           - containerPort: 8000
             name: http
       serviceAccountName: fission-svc
+      {{- if .Values.pullSecret}}
+      imagePullSecrets:
+        - name: {{ .Values.pullSecret }}
+      {{- end }}
       {{- if and (.Values.persistence.enabled) (ne (.Values.persistence.storageType | default "local") "s3") }}
       volumes:
       - name: fission-storage
@@ -903,6 +935,10 @@ spec:
         - name: RABBITMQ_IMAGE
           value: "{{ .Values.mqt_keda.connector_images.rabbitmq.image }}:{{ .Values.mqt_keda.connector_images.rabbitmq.tag }}"
       serviceAccountName: fission-svc
+      {{- if .Values.pullSecret}}
+      imagePullSecrets:
+        - name: {{ .Values.pullSecret }}
+      {{- end }}
 {{- if .Values.extraCoreComponentPodConfig }}
 {{ toYaml .Values.extraCoreComponentPodConfig | indent 6 -}}
 {{- end }}

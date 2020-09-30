@@ -19,6 +19,9 @@ image: fission/fission-bundle
 ## Image pull policy
 pullPolicy: IfNotPresent
 
+## Image pull secret
+pullSecret:
+
 ## Fission image version
 imageTag: 1.11.0
 
@@ -177,6 +180,7 @@ azureStorageQueue:
 
 ## Kafka: enable and configure the details
 kafka:
+  # Whether to let Fission support Kafka queue consumption
   enabled: false
   # note: below link is only for reference.
   # Please use the brokers link for your kafka here.
@@ -284,7 +288,9 @@ busyboxImage: busybox
 pruneInterval: 60
 
 ## Fission pre-install/pre-upgrade checks live in this image
-preUpgradeChecksImage: fission/pre-upgrade-checks
+preUpgradeChecks:
+  image: fission/pre-upgrade-checks
+  tag: 1.11.0
 
 ## if there are any pod specialization errors when a function is triggered and this flag is set to true, the error
 ## summary is returned as part of http response
@@ -298,6 +304,11 @@ prometheus:
   ## If enabled is false, please assign the prometheus service URL
   ## that is accessible by components.
   serviceEndpoint: ""
+
+## Grafana for show metrics
+grafana:
+  ## set this flag to true if grafana needs to be deployed along with fission
+  enabled: false
 
 ## set this flag to false if you dont need canary deployment feature
 canaryDeployment:

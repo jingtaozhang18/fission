@@ -1,3 +1,6 @@
+# The changes by jingtao:
+* 添加minikube和fission的安装、部署、升级脚本（charts文件下），可一键部署minikube基础环境和fission开发测试环境，并可进行迭代更新
+
 # Fission: Serverless Functions for Kubernetes
 
 [![Build Status](https://travis-ci.org/fission/fission.svg?branch=master)](https://travis-ci.org/fission/fission)
