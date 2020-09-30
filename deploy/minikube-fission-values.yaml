@@ -1,0 +1,41 @@
+analytics:
+  false
+
+kafka:
+  enabled: true
+  brokers: my-kafka.development:9092
+  version: 5.0.1
+
+routerServiceType: NodePort
+
+influxdb:
+  enabled: true
+
+prometheus:
+  enabled: true
+  alertmanager:
+    persistentVolume:
+      enabled: true
+      storageClass: local-path
+  pushgateway:
+    persistentVolume:
+      enabled: true
+      storageClass: local-path
+  server:
+    persistentVolume:
+      enabled: true
+      storageClass: local-path
+
+grafana:
+  enabled: true
+  persistence:
+    enabled: true
+    storageClassName: local-path
+    type: pvc
+    size: 2Gi
+  grafana.ini:
+    server:
+      root_url: http://fission-grafana.fission/
+
+persistence:
+  storageClass: local-path
