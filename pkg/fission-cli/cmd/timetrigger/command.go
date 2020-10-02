@@ -30,7 +30,7 @@ func Commands() *cobra.Command {
 		RunE:  wrapper.Wrapper(Create),
 	}
 	wrapper.SetFlags(createCmd, flag.FlagSet{
-		Optional: []flag.Flag{flag.TtName, flag.TtFnName,
+		Optional: []flag.Flag{flag.TtName, flag.TtFnName, flag.TtFnParam,
 			flag.TtCron, flag.NamespaceFunction, flag.SpecSave, flag.SpecDry},
 	})
 
@@ -42,7 +42,7 @@ func Commands() *cobra.Command {
 	}
 	wrapper.SetFlags(updateCmd, flag.FlagSet{
 		Required: []flag.Flag{flag.TtName},
-		Optional: []flag.Flag{flag.TtFnName, flag.TtCron, flag.NamespaceTrigger},
+		Optional: []flag.Flag{flag.TtFnName, flag.TtCron, flag.TtFnParam, flag.NamespaceTrigger},
 	})
 
 	deleteCmd := &cobra.Command{

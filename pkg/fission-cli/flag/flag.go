@@ -124,10 +124,11 @@ var (
 	HtFnWeight          = Flag{Type: IntSlice, Name: flagkey.HtFnWeight, Usage: "Weight for each function supplied with --function flag, in the same order. Used for canary deployment"}
 	HtFnFilter          = Flag{Type: String, Name: flagkey.HtFilter, Usage: "Name of the function for trigger(s)"}
 
-	TtName   = Flag{Type: String, Name: flagkey.TtName, Usage: "Time Trigger name"}
-	TtCron   = Flag{Type: String, Name: flagkey.TtCron, Usage: "Time trigger cron spec with each asterisk representing respectively second, minute, hour, the day of the month, month and day of the week. Also supports readable formats like '@every 5m', '@hourly'"}
-	TtFnName = Flag{Type: String, Name: flagkey.TtFnName, Usage: "Function name"}
-	TtRound  = Flag{Type: Int, Name: flagkey.TtRound, Usage: "Get next N rounds of invocation time", DefaultValue: 1}
+	TtName    = Flag{Type: String, Name: flagkey.TtName, Usage: "Time Trigger name"}
+	TtCron    = Flag{Type: String, Name: flagkey.TtCron, Usage: "Time trigger cron spec with each asterisk representing respectively second, minute, hour, the day of the month, month and day of the week. Also supports readable formats like '@every 5m', '@hourly'"}
+	TtFnName  = Flag{Type: String, Name: flagkey.TtFnName, Usage: "Function name"}
+	TtFnParam = Flag{Type: String, Name: flagkey.TtParameter, Usage: "The parameter pass to function"}
+	TtRound   = Flag{Type: Int, Name: flagkey.TtRound, Usage: "Get next N rounds of invocation time", DefaultValue: 1}
 
 	MqtName            = Flag{Type: String, Name: flagkey.MqtName, Usage: "Message queue trigger name"}
 	MqtFnName          = Flag{Type: String, Name: flagkey.MqtFnName, Usage: "Function name"}

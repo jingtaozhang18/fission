@@ -55,7 +55,7 @@ func (opts *UpdateSubCommand) complete(input cli.Input) error {
 	}
 
 	updated := false
-	newCron := input.String("cron")
+	newCron := input.String(flagkey.TtCron)
 	if len(newCron) != 0 {
 		tt.Spec.Cron = newCron
 		updated = true
@@ -64,9 +64,15 @@ func (opts *UpdateSubCommand) complete(input cli.Input) error {
 	// TODO : During update, function has to be in the same ns as the trigger object
 	// but since we are not checking this for other triggers too, not sure if we need a check here.
 
-	fnName := input.String("function")
+	fnName := input.String(flagkey.TtFnName)
 	if len(fnName) > 0 {
 		tt.Spec.FunctionReference.Name = fnName
+		updated = true
+	}
+	cronParameter := input.String(flagkey.TtParameter)
+
+	if len(cronParameter) != 0 {
+		tt.Spec.Parameter = cronParameter
 		updated = true
 	}
 

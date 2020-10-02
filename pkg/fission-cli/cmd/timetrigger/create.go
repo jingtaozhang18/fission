@@ -69,6 +69,7 @@ func (opts *CreateSubCommand) complete(input cli.Input) error {
 	if len(cronSpec) == 0 {
 		return errors.New("Need a cron spec like '0 30 * * * *', '@every 1h30m', or '@hourly'; use --cron")
 	}
+	cronParameter := input.String(flagkey.TtParameter)
 
 	if input.Bool(flagkey.SpecSave) {
 		specDir := util.GetSpecDir(input)
@@ -103,6 +104,7 @@ func (opts *CreateSubCommand) complete(input cli.Input) error {
 				Type: fv1.FunctionReferenceTypeFunctionName,
 				Name: fnName,
 			},
+			Parameter: cronParameter,
 		},
 	}
 
