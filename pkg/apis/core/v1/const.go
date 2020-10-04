@@ -152,4 +152,10 @@ const (
 	GlobalSecretConfigMapGetterCR = "secret-configmap-getter"
 	// 绑定服务帐号和角色之间的关系
 	GlobalSecretConfigMapGetterRB = "global-secret-configmap-getter-binding"
+	// 日志输出配置的configmap名称
+	LogCollectionConfigName = "fission-log-collection-config"
+	// 函数配置中的指明使用的日志输出的方式
+	LogCollectionConfigKey = "log-collection-type"
+	// 只有函数使用的此命名规则的configMap可以携带日志的输出方式
+	LogConfigMapName = "func-%s"
 )

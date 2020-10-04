@@ -126,6 +126,8 @@ spec:
             - name: docker-log
               mountPath: /var/lib/docker/containers
               readOnly: true
+            - name: fluentd-config
+              mountPath: /fluentd/etc/config.d
 {{- if .Values.logger.enableSecurityContext }}
           securityContext:
             privileged: true
@@ -137,27 +139,7 @@ spec:
           image: "{{ .Values.logger.fluentdImage }}:{{ .Values.logger.fluentdImageTag }}"
 {{- end }}
           imagePullPolicy: {{ .Values.pullPolicy }}
-          # CMD ["/fluent-bit/bin/fluent-bit", "-c", "/fluent-bit/etc/fluent-bit.conf"]
-          command: ["/fluent-bit/bin/fluent-bit", "-c", "/fluent-bit/etc/fluentbit.conf"]
-          env:
-            - name: INFLUXDB_ADDRESS
-              value: influxdb
-            - name: INFLUXDB_PORT
-              value: "8086"
-            - name: INFLUXDB_DBNAME
-              value: "fissionFunctionLog"
-            - name: INFLUXDB_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: influxdb
-                  key: username
-            - name: INFLUXDB_PASSWD
-              valueFrom:
-                secretKeyRef:
-                  name: influxdb
-                  key: password
-            - name: LOG_PATH
-              value: /var/log/fission/*.log
+
 {{- if .Values.logger.enableSecurityContext }}
           securityContext:
             privileged: true
@@ -169,9 +151,8 @@ spec:
             - name: docker-log
               mountPath: /var/lib/docker/containers
               readOnly: true
-            - name: fluentbit-config
-              mountPath: /fluent-bit/etc/
-              readOnly: true
+            - name: fluentd-config
+              mountPath: /fluentd/etc/config.d
       serviceAccountName: fission-svc
       {{- if .Values.pullSecret}}
       imagePullSecrets:
@@ -184,9 +165,8 @@ spec:
         - name: docker-log
           hostPath:
             path: /var/lib/docker/containers
-        # Fluentbit config location: /fluent-bit/etc/*.conf
-        - name: fluentbit-config
-          configMap:
-            name: {{ .Release.Name }}-fission-fluentbit
+        # fluentd configs from logger to fluentd
+        - name: fluentd-config
+          emptyDir: {}
   updateStrategy:
     type: RollingUpdate

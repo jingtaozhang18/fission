@@ -1,0 +1,83 @@
+FROM golang:1.12-alpine as godep
+
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.ustc.edu.cn/g' /etc/apk/repositories
+RUN apk add bash ca-certificates git gcc g++ libc-dev
+
+ARG GOPKG=github.com/fission/fission
+
+ENV GO111MODULE=on
+ENV GOPROXY=https://goproxy.io
+
+WORKDIR /go/src/${GOPKG}
+
+# To reuse build cache, copy go.mod & go.sum and download dependencies first.
+COPY go.* ./
+
+RUN go mod download
+
+From godep as builder
+
+ARG GOPKG
+WORKDIR /go/src/${GOPKG}
+
+# Copy whole fission directory to work dir
+COPY ./ ./
+
+WORKDIR /go/src/${GOPKG}/cmd/fluentd-wrapper
+
+ARG GITCOMMIT=unknown
+# E.g. GITCOMMIT=$(git rev-parse HEAD)
+
+ARG BUILDVERSION=unknown
+# E.g. BUILDVERSION=$(git rev-parse HEAD)
+
+ARG BUILDDATE=unknown
+# E.g. BUILDDATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -o /go/bin/fluentd-wrapper \
+    -gcflags=-trimpath=$GOPATH \
+    -asmflags=-trimpath=$GOPATH \
+    -ldflags "-X github.com/fission/fission/pkg/info.GitCommit=${GITCOMMIT} -X github.com/fission/fission/pkg/info.BuildDate=${BUILDDATE} -X github.com/fission/fission/pkg/info.Version=${BUILDVERSION}"
+
+
+FROM alpine:3.9 as base
+
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.ustc.edu.cn/g' /etc/apk/repositories \
+ && apk update \
+ && apk add --no-cache \
+        ca-certificates \
+        ruby ruby-irb ruby-etc ruby-webrick \
+        tini \
+        ca-certificates \
+ && apk add --no-cache --virtual .build-deps \
+        build-base linux-headers \
+        ruby-dev gnupg \
+ && echo 'gem: --no-document' >> /etc/gemrc \
+ && gem install oj -v 3.8.1 \
+ && gem install json -v 2.3.0 \
+ && gem install async-http -v 0.50.7 \
+ && gem install ext_monitor -v 0.1.2 \
+ && gem install fluentd -v 1.11.2 \
+ && gem install bigdecimal -v 1.4.4 \
+ && gem install fluent-plugin-kafka \
+ && gem install fluent-plugin-aliyun-sls \
+ && apk del .build-deps \
+ && rm -rf /tmp/* /var/tmp/* /usr/lib/ruby/gems/*/cache/*.gem /usr/lib/ruby/gems/2.*/gems/fluentd-*/test
+
+RUN addgroup -S fluent && adduser -S -g fluent fluent \
+    # for log storage (maybe shared with host)
+    && mkdir -p /fluentd/log \
+    # configuration/plugins path (default: copied from .)
+    && mkdir -p /fluentd/etc /fluentd/plugins /fluentd/pos
+
+COPY --from=builder /go/bin/fluentd-wrapper /
+COPY cmd/fluentd-wrapper/fluent.conf /fluentd/etc/
+
+VOLUME ["/fluentd/config/config.d", "/var/log"]
+
+ENV LD_PRELOAD=""
+EXPOSE 24224 5140 8090
+
+USER root
+ENTRYPOINT ["/fluentd-wrapper"]
