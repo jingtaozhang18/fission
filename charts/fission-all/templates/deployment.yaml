@@ -21,7 +21,21 @@ metadata:
     {{- if .Values.enableIstio }}
     istio-injection: enabled
     {{- end }}
+
+# namespace for global secret and configmap
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.globalSecretConfigmapNamespace }}
+  labels:
+    name: fission-global-secret-configmap-namespace
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    {{- if .Values.enableIstio }}
+    istio-injection: enabled
+    {{- end }}
 {{- end }}
+
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -110,6 +124,16 @@ metadata:
   namespace: {{ .Release.Namespace }}
 data:
   "config.yaml": {{ include "config" . | b64enc }}
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fission-function-global-configmap
+  namespace: {{ .Values.globalSecretConfigmapNamespace }}
+data:
+  "kafka-broker-list": my-kafka.development:9092
+  "pushgateway-url": {{ .Release.Name }}-prometheus-pushgateway.fission:9091
 
 ---
 apiVersion: apps/v1

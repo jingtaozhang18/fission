@@ -1,9 +1,11 @@
-flask ~= 1.0.4
+flask ~= 1.1.2
 bjoern
 httplib2
 python-dateutil
-requests==2.20.0
+requests==2.24.0
 redis
 hiredis
 gevent
 sentry-sdk[flask]
+kafka-python
+redis

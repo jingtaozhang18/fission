@@ -85,21 +85,23 @@ func (opts *UpdateSubCommand) complete(input cli.Input) error {
 
 	if len(secretNames) > 0 {
 
-		// check that the referenced secret is in the same ns as the function, if not give a warning.
+		// check that the referenced secret exists, if not give a warning.
 		for _, secretName := range secretNames {
+			secretNamespace, secretName := getNamespaceAndName(secretName, fnNamespace)
 			err := opts.Client().V1().Misc().SecretExists(&metav1.ObjectMeta{
-				Namespace: fnNamespace,
+				Namespace: secretNamespace,
 				Name:      secretName,
 			})
 			if k8serrors.IsNotFound(err) {
-				console.Warn(fmt.Sprintf("secret %s not found in Namespace: %s. Secret needs to be present in the same namespace as function", secretName, fnNamespace))
+				console.Warn(fmt.Sprintf("secret %s not found in Namespace: %s.", secretName, fnNamespace))
 			}
 		}
 
 		for _, secretName := range secretNames {
+			secretNamespace, secretName := getNamespaceAndName(secretName, fnNamespace)
 			newSecret := fv1.SecretReference{
 				Name:      secretName,
-				Namespace: fnNamespace,
+				Namespace: secretNamespace,
 			}
 			secrets = append(secrets, newSecret)
 		}
@@ -109,21 +111,23 @@ func (opts *UpdateSubCommand) complete(input cli.Input) error {
 
 	if len(cfgMapNames) > 0 {
 
-		// check that the referenced cfgmap is in the same ns as the function, if not give a warning.
+		// check that the referenced cfgmap exists, if not give a warning.
 		for _, cfgMapName := range cfgMapNames {
+			cfgMapNamespace, cfgMapName := getNamespaceAndName(cfgMapName, fnNamespace)
 			err := opts.Client().V1().Misc().ConfigMapExists(&metav1.ObjectMeta{
-				Namespace: fnNamespace,
+				Namespace: cfgMapNamespace,
 				Name:      cfgMapName,
 			})
 			if k8serrors.IsNotFound(err) {
-				console.Warn(fmt.Sprintf("ConfigMap %s not found in Namespace: %s. ConfigMap needs to be present in the same namespace as the function", cfgMapName, fnNamespace))
+				console.Warn(fmt.Sprintf("ConfigMap %s not found in Namespace: %s.", cfgMapName, fnNamespace))
 			}
 		}
 
 		for _, cfgMapName := range cfgMapNames {
+			cfgMapNamespace, cfgMapName := getNamespaceAndName(cfgMapName, fnNamespace)
 			newCfgMap := fv1.ConfigMapReference{
 				Name:      cfgMapName,
-				Namespace: fnNamespace,
+				Namespace: cfgMapNamespace,
 			}
 			configMaps = append(configMaps, newCfgMap)
 		}

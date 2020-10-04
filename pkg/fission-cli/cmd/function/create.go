@@ -225,16 +225,18 @@ func (opts *CreateSubCommand) complete(input cli.Input) error {
 	var cfgmaps []fv1.ConfigMapReference
 
 	if len(secretNames) > 0 {
-		// check the referenced secret is in the same ns as the function, if not give a warning.
+		// check the referenced secret exists, if not give a warning.
 		if !toSpec { // TODO: workaround in order not to block users from creating function spec, remove it.
 			for _, secretName := range secretNames {
+				// jingtao change 识别命名空间加名称的定义方式
+				secretNamespace, secretName := getNamespaceAndName(secretName, fnNamespace)
 				err := opts.Client().V1().Misc().SecretExists(&metav1.ObjectMeta{
-					Namespace: fnNamespace,
+					Namespace: secretNamespace,
 					Name:      secretName,
 				})
 				if err != nil {
 					if k8serrors.IsNotFound(err) {
-						console.Warn(fmt.Sprintf("Secret %s not found in Namespace: %s. Secret needs to be present in the same namespace as function", secretName, fnNamespace))
+						console.Warn(fmt.Sprintf("Secret %s not found in Namespace: %s.", secretName, fnNamespace))
 					} else {
 						return errors.Wrapf(err, "error checking secret %s", secretName)
 					}
@@ -242,25 +244,27 @@ func (opts *CreateSubCommand) complete(input cli.Input) error {
 			}
 		}
 		for _, secretName := range secretNames {
+			secretNamespace, secretName := getNamespaceAndName(secretName, fnNamespace)
 			newSecret := fv1.SecretReference{
 				Name:      secretName,
-				Namespace: fnNamespace,
+				Namespace: secretNamespace,
 			}
 			secrets = append(secrets, newSecret)
 		}
 	}
 
 	if len(cfgMapNames) > 0 {
-		// check the referenced cfgmap is in the same ns as the function, if not give a warning.
+		// check the referenced cfgmap exists, if not give a warning.
 		if !toSpec {
 			for _, cfgMapName := range cfgMapNames {
+				cfgMapNamespace, cfgMapName := getNamespaceAndName(cfgMapName, fnNamespace)
 				err := opts.Client().V1().Misc().ConfigMapExists(&metav1.ObjectMeta{
-					Namespace: fnNamespace,
+					Namespace: cfgMapNamespace,
 					Name:      cfgMapName,
 				})
 				if err != nil {
 					if k8serrors.IsNotFound(err) {
-						console.Warn(fmt.Sprintf("ConfigMap %s not found in Namespace: %s. ConfigMap needs to be present in the same namespace as function", cfgMapName, fnNamespace))
+						console.Warn(fmt.Sprintf("ConfigMap %s not found in Namespace: %s.", cfgMapName, fnNamespace))
 					} else {
 						return errors.Wrapf(err, "error checking configmap %s", cfgMapName)
 					}
@@ -268,9 +272,10 @@ func (opts *CreateSubCommand) complete(input cli.Input) error {
 			}
 		}
 		for _, cfgMapName := range cfgMapNames {
+			cfgMapNamespace, cfgMapName := getNamespaceAndName(cfgMapName, fnNamespace)
 			newCfgMap := fv1.ConfigMapReference{
 				Name:      cfgMapName,
-				Namespace: fnNamespace,
+				Namespace: cfgMapNamespace,
 			}
 			cfgmaps = append(cfgmaps, newCfgMap)
 		}
