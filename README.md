@@ -1,5 +1,6 @@
 # The changes by jingtao:
 * 添加minikube和fission的安装、部署、升级脚本（charts文件下），可一键部署minikube基础环境和fission开发测试环境，并可进行迭代更新
+* 允许用户在配置timetrigger触发时携带body体，实现对函数更加定制化的周期性调用
 
 # Fission: Serverless Functions for Kubernetes
 
