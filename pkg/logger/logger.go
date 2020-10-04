@@ -92,7 +92,7 @@ func createLogSymlinks(zapLogger *zap.Logger, pod *corev1.Pod) error {
 			continue
 		}
 		containerLogPath := getLogPath(originalContainerLogPath, pod.Name, pod.Namespace, container.Name, containerUID)
-		symlinkLogPath := getLogPath(fissionSymlinkPath, pod.Name, pod.Namespace, container.Name, containerUID)
+		symlinkLogPath := getLinkLogPath(fissionSymlinkPath, pod.Labels[fv1.FUNCTION_NAMESPACE], pod.Labels[fv1.FUNCTION_NAME], pod.Name, pod.Namespace, container.Name, containerUID)
 
 		// check whether a symlink exists, if yes then ignore it
 		if _, err := os.Stat(symlinkLogPath); os.IsNotExist(err) {
@@ -139,6 +139,11 @@ func parseContainerString(containerID string) (string, error) {
 	return ID, nil
 }
 
+func getLinkLogPath(pathPrefix, funcNamespace, funcName, podName, podNamespace, containerName, containerID string) string {
+	logName := fmt.Sprintf("%s_%s_%s_%s_%s-%s.log", funcNamespace, funcName, podName, podNamespace, containerName, containerID)
+	return filepath.Join(pathPrefix, logName)
+}
+
 func getLogPath(pathPrefix, podName, podNamespace, containerName, containerID string) string {
 	logName := fmt.Sprintf("%s_%s_%s-%s.log", podName, podNamespace, containerName, containerID)
 	return filepath.Join(pathPrefix, logName)
@@ -181,10 +186,12 @@ func Start() {
 		}
 	}
 	go symlinkReaper(zapLogger)
-	_, kubernetesClient, _, err := crd.MakeFissionClient()
+	fissionClient, kubernetesClient, _, err := crd.MakeFissionClient()
 	if err != nil {
 		log.Fatalf("Error starting pod watcher: %v", err)
 	}
+	fg, _ := makeFluentdGen(zapLogger, kubernetesClient, fissionClient)
+	fg.server()
 	controller := makePodLoggerController(zapLogger, kubernetesClient)
 	controller.Run(make(chan struct{}))
 	zapLogger.Fatal("Stop watching pod changes")

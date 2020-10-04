@@ -129,6 +129,28 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
+  name: fission-log-collection-config
+  namespace: {{ .Values.globalSecretConfigmapNamespace }}
+data:
+  "kafka-1": |-
+    <store>
+      @type kafka2
+    brokers my-kafka.development:9092
+    default_topic demo
+    <format>
+      @type json
+    </format>
+    <buffer>
+      flush_mode interval
+      retry_type exponential_backoff
+      flush_interval 3
+    </buffer>
+    </store>
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
   name: fission-function-global-configmap
   namespace: {{ .Values.globalSecretConfigmapNamespace }}
 data:

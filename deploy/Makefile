@@ -24,6 +24,8 @@ FISSION_FETCHER_IMAGE_NAME="jingtao/fission-fetcher"
 FISSION_FETCHER_IMAGE_TAG=$(DEFAULT_TAG)
 FISSION_PREUPGRADECHECKS_IMAGE_NAME="jingtao/fission-preupgradechecks"
 FISSION_PREUPGRADECHECKS_IMAGE_TAG=$(DEFAULT_TAG)
+FISSION_FLUENTD_WRAPPER_IMAGE_NAME="jingtao/fission-fluentd-wrapper"
+FISSION_FLUENTD_WRAPPER_IMAGE_TAG=$(DEFAULT_TAG)
 
 
 ## minikube的运维命令
@@ -102,6 +104,7 @@ install_fission: build_all
 		 	--set logger.fluentdImageRepository= \
 		 	--set image=$(FISSION_IMAGE_NAME),imageTag=$(FISSION_IMAGE_TAG) \
 		 	--set fetcher.image=$(FISSION_FETCHER_IMAGE_NAME),fetcher.imageTag=$(FISSION_FETCHER_IMAGE_TAG) \
+		 	--set logger.fluentdImage=$(FISSION_FLUENTD_WRAPPER_IMAGE_NAME),logger.fluentdImageTag=$(FISSION_FLUENTD_WRAPPER_IMAGE_TAG) \
 		 	--set preUpgradeChecks.image=$(FISSION_PREUPGRADECHECKS_IMAGE_NAME),preUpgradeChecks.tag=$(FISSION_PREUPGRADECHECKS_IMAGE_TAG) \
 			$(PROJECT_DIR)/charts/fission-all
 	echo "grafana password:"
@@ -116,12 +119,13 @@ update_fission_image: build_all
 			--set logger.fluentdImageRepository= \
 			--set image=$(FISSION_IMAGE_NAME),imageTag=$(FISSION_IMAGE_TAG) \
 			--set fetcher.image=$(FISSION_FETCHER_IMAGE_NAME),fetcher.imageTag=$(FISSION_FETCHER_IMAGE_TAG) \
+			--set logger.fluentdImage=$(FISSION_FLUENTD_WRAPPER_IMAGE_NAME),logger.fluentdImageTag=$(FISSION_FLUENTD_WRAPPER_IMAGE_TAG) \
 			--set preUpgradeChecks.image=$(FISSION_PREUPGRADECHECKS_IMAGE_NAME),preUpgradeChecks.tag=$(FISSION_PREUPGRADECHECKS_IMAGE_TAG) \
 			$(PROJECT_DIR)/charts/fission-all
 
 ## fission镜像管理
 # build_fission_bundle build_fission_fetcher build_fission_preupgradechecks build_fission_builder build_fission_cli
-build_all: build_fission_bundle build_fission_fetcher build_fission_preupgradechecks build_fission_builder build_fission_cli
+build_all: build_fission_bundle build_fission_fetcher build_fission_preupgradechecks build_fission_builder build_fluentd_wrapper build_fission_cli
 
 build_fission_bundle:
 	DOCKER_TLS_VERIFY=$(DOCKER_TLS_VERIFY) DOCKER_HOST=$(DOCKER_HOST) DOCKER_CERT_PATH=$(DOCKER_CERT_PATH) MINIKUBE_ACTIVE_DOCKERD=$(MINIKUBE_ACTIVE_DOCKERD) \
@@ -138,6 +142,10 @@ build_fission_preupgradechecks:
 build_fission_builder:
 	DOCKER_TLS_VERIFY=$(DOCKER_TLS_VERIFY) DOCKER_HOST=$(DOCKER_HOST) DOCKER_CERT_PATH=$(DOCKER_CERT_PATH) MINIKUBE_ACTIVE_DOCKERD=$(MINIKUBE_ACTIVE_DOCKERD) \
 		docker build -t $(FISSION_BUILDER_IMAGE_NAME):$(FISSION_BUILDER_IMAGE_TAG) -f $(PROJECT_DIR)/cmd/builder/Dockerfile.fission-builder ../
+
+build_fluentd_wrapper:
+		DOCKER_TLS_VERIFY=$(DOCKER_TLS_VERIFY) DOCKER_HOST=$(DOCKER_HOST) DOCKER_CERT_PATH=$(DOCKER_CERT_PATH) MINIKUBE_ACTIVE_DOCKERD=$(MINIKUBE_ACTIVE_DOCKERD) \
+    		docker build -t $(FISSION_FLUENTD_WRAPPER_IMAGE_NAME):$(FISSION_FLUENTD_WRAPPER_IMAGE_TAG) -f ../cmd/fluentd-wrapper/Dockerfile.fluentd-wrapper ../
 
 # 编译fission CLI到某个位置，可根据实际情况修改
 build_fission_cli:
@@ -199,6 +207,8 @@ PUBLIC_FISSION_FETCHER_IMAGE_NAME="fuxing/fission-fetcher"
 PUBLIC_FISSION_FETCHER_IMAGE_TAG=$(PUBLIC_DEFAULT_TAG)
 PUBLIC_FISSION_PREUPGRADECHECKS_IMAGE_NAME="fuxing/fission-preupgradechecks"
 PUBLIC_FISSION_PREUPGRADECHECKS_IMAGE_TAG=$(PUBLIC_DEFAULT_TAG)
+PUBLIC_FISSION_FLUENTD_WRAPPER_IMAGE_NAME="fuxing/fission-fluentd-wrapper"
+PUBLIC_FISSION_FLUENTD_WRAPPER_IMAGE_TAG=$(PUBLIC_DEFAULT_TAG)
 PUBLIC_FISSION_ENV_PYTHON_IMAGE_NAME="fuxing/env/python"
 PUBLIC_FISSION_ENV_PYTHON_IMAGE_TAG="v4"
 
@@ -213,6 +223,7 @@ install_fission_public:
 			--set logger.fluentdImageRepository=$(PUBLIC_REPO) \
 			--set image=$(PUBLIC_FISSION_IMAGE_NAME),imageTag=$(PUBLIC_FISSION_IMAGE_TAG) \
 			--set fetcher.image=$(PUBLIC_FISSION_FETCHER_IMAGE_NAME),fetcher.imageTag=$(PUBLIC_FISSION_FETCHER_IMAGE_TAG) \
+			--set logger.fluentdImage=$(PUBLIC_FISSION_FLUENTD_WRAPPER_IMAGE_NAME),logger.fluentdImageTag=$(PUBLIC_FISSION_FLUENTD_WRAPPER_IMAGE_TAG) \
 			--set preUpgradeChecks.image=$(PUBLIC_FISSION_PREUPGRADECHECKS_IMAGE_NAME),preUpgradeChecks.tag=$(PUBLIC_FISSION_PREUPGRADECHECKS_IMAGE_TAG) \
 			$(PROJECT_DIR)/charts/fission-all
 	echo "grafana password:"
@@ -227,6 +238,7 @@ update_fission_image_public:
 			--set logger.fluentdImageRepository=$(PUBLIC_REPO) \
 			--set image=$(PUBLIC_FISSION_IMAGE_NAME),imageTag=$(PUBLIC_FISSION_IMAGE_TAG) \
 			--set fetcher.image=$(PUBLIC_FISSION_FETCHER_IMAGE_NAME),fetcher.imageTag=$(PUBLIC_FISSION_FETCHER_IMAGE_TAG) \
+			--set logger.fluentdImage=$(PUBLIC_FISSION_FLUENTD_WRAPPER_IMAGE_NAME),logger.fluentdImageTag=$(PUBLIC_FISSION_FLUENTD_WRAPPER_IMAGE_TAG) \
 			--set preUpgradeChecks.image=$(PUBLIC_FISSION_PREUPGRADECHECKS_IMAGE_NAME),preUpgradeChecks.tag=$(PUBLIC_FISSION_PREUPGRADECHECKS_IMAGE_TAG) \
 			$(PROJECT_DIR)/charts/fission-all
 	fission --kube-context $(PUBLIC_CONTEXT) env update --name python --image $(PUBLIC_REPO)/$(PUBLIC_FISSION_ENV_PYTHON_IMAGE_NAME):$(PUBLIC_FISSION_ENV_PYTHON_IMAGE_TAG) --builder fission/python-builder:latest --graceperiod 10
