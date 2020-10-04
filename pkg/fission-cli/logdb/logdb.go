@@ -23,6 +23,7 @@ import (
 
 const (
 	INFLUXDB = "influxdb"
+	PODDB    = "poddb"
 )
 
 type LogDatabase interface {
@@ -30,12 +31,13 @@ type LogDatabase interface {
 }
 
 type LogFilter struct {
-	Pod         string
-	Function    string
-	FuncUid     string
-	Since       time.Time
-	Reverse     bool
-	RecordLimit int
+	Pod               string
+	Function          string
+	FunctionNamespace string
+	FuncUid           string
+	Since             time.Time
+	Reverse           bool
+	RecordLimit       int
 }
 
 type LogEntry struct {
@@ -54,6 +56,8 @@ func GetLogDB(dbType string, serverURL string) (LogDatabase, error) {
 	switch dbType {
 	case INFLUXDB:
 		return NewInfluxDB(serverURL)
+	case PODDB:
+		return NewPodDB(serverURL)
 	}
 	return nil, fmt.Errorf("log database type is incorrect, now only support %s", INFLUXDB)
 }
