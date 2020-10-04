@@ -1,5 +1,6 @@
 # The changes by jingtao:
 * 添加minikube和fission的安装、部署、升级脚本（charts文件下），可一键部署minikube基础环境和fission开发测试环境，并可进行迭代更新
+* 允许所有命名空间的fission函数配置使用fission-secret-configmap命名空间下的configmap和secret，可将其作为全局默认参数来使用，减少用户在沟通集群相关参数方面的成本
 
 # Fission: Serverless Functions for Kubernetes
 
