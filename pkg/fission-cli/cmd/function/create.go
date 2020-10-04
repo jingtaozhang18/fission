@@ -228,7 +228,7 @@ func (opts *CreateSubCommand) complete(input cli.Input) error {
 		// check the referenced secret exists, if not give a warning.
 		if !toSpec { // TODO: workaround in order not to block users from creating function spec, remove it.
 			for _, secretName := range secretNames {
-				// jingtao change 识别命名空间加名称的定义方式
+				// 识别命名空间加名称的定义方式
 				secretNamespace, secretName := getNamespaceAndName(secretName, fnNamespace)
 				err := opts.Client().V1().Misc().SecretExists(&metav1.ObjectMeta{
 					Namespace: secretNamespace,
