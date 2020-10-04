@@ -1,13 +1,20 @@
 FROM alpine:3.5
 
+ENV TZ Asia/Shanghai
+
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.ustc.edu.cn/g' /etc/apk/repositories
+
 WORKDIR /app
 
-RUN apk add --no-cache python python-dev build-base py-pip libev-dev libffi-dev && \
+RUN apk add --no-cache python python-dev build-base py-pip libev-dev libffi-dev bash git && \
     pip install --upgrade pip && \
     rm -r /root/.cache
 
+COPY pip.conf /root/.pip/pip.conf
 COPY requirements.txt /app
 RUN pip install -r requirements.txt
+
+RUN cd /tmp && git clone https://git.jingtao.fun/jingtao/prometheus_client_python.git && cd prometheus_client_python && python3 setup.py install
 
 COPY . /app
 

@@ -107,14 +107,16 @@ func (client *PreUpgradeTaskClient) VerifyFunctionSpecReferences() {
 	for _, fn := range fList.Items {
 		secrets := fn.Spec.Secrets
 		for _, secret := range secrets {
-			if secret.Namespace != fn.ObjectMeta.Namespace {
+			// 允许使用公共配置中心下的配置
+			if secret.Namespace != "fission-secret-configmap" && secret.Namespace != fn.ObjectMeta.Namespace {
 				errs = multierror.Append(errs, fmt.Errorf("function : %s.%s cannot reference a secret : %s in namespace : %s", fn.ObjectMeta.Name, fn.ObjectMeta.Namespace, secret.Name, secret.Namespace))
 			}
 		}
 
 		configmaps := fn.Spec.ConfigMaps
 		for _, configmap := range configmaps {
-			if configmap.Namespace != fn.ObjectMeta.Namespace {
+			// 允许使用公共配置中心下的配置
+			if configmap.Namespace != "fission-secret-configmap" && configmap.Namespace != fn.ObjectMeta.Namespace {
 				errs = multierror.Append(errs, fmt.Errorf("function : %s.%s cannot reference a configmap : %s in namespace : %s", fn.ObjectMeta.Name, fn.ObjectMeta.Namespace, configmap.Name, configmap.Namespace))
 			}
 		}
@@ -212,6 +214,16 @@ func (client *PreUpgradeTaskClient) SetupRoleBindings() {
 		client.logger.Fatal("error setting up rolebinding for service account",
 			zap.Error(err),
 			zap.String("role_binding", fv1.SecretConfigMapGetterRB),
+			zap.String("service_account", fv1.FissionFetcherSA),
+			zap.String("service_account_namespace", client.fnPodNs))
+	}
+
+	err = utils.SetupRoleBinding(client.logger, client.k8sClient, fv1.GlobalSecretConfigMapGetterRB, fv1.GlobalSecretConfigMapNS, fv1.GlobalSecretConfigMapGetterCR, fv1.ClusterRole, fv1.FissionFetcherSA, client.fnPodNs)
+	if err != nil {
+		// 在首次升级的过程中因为全局配置的命名空间还没有生成，所以不应该产生致命错误
+		client.logger.Warn("error setting up rolebinding for service account",
+			zap.Error(err),
+			zap.String("role_binding", fv1.GlobalSecretConfigMapGetterRB),
 			zap.String("service_account", fv1.FissionFetcherSA),
 			zap.String("service_account_namespace", client.fnPodNs))
 	}

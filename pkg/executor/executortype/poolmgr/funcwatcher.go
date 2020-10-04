@@ -70,6 +70,7 @@ func (gpm *GenericPoolManager) makeFuncController(fissionClient *crd.FissionClie
 				}
 
 				// TODO : Just bring to your attention during review :
+				// jingtao's fission env will need global config, so this must be successful, but I dont want to change the logic now
 				// setup rolebinding is tried, if it fails, we dont return. we just log an error and move on, because :
 				// 1. not all functions have secrets and/or configmaps, so things will work without this rolebinding in that case.
 				// 2. on the contrary, when the route is tried, the env fetcher logs will show a 403 forbidden message and same will be relayed to executor.
@@ -77,9 +78,21 @@ func (gpm *GenericPoolManager) makeFuncController(fissionClient *crd.FissionClie
 				if err != nil {
 					gpm.logger.Error("error creating rolebinding", zap.Error(err), zap.String("role_binding", fv1.SecretConfigMapGetterRB))
 				} else {
-					gpm.logger.Debug("successfully set up rolebinding for fetcher service account for function",
+					gpm.logger.Debug("successfully set up rolebinding of the local config and secrets for fetcher for fetcher service account for function",
 						zap.String("service_account", fv1.FissionFetcherSA),
-						zap.String("service_account_namepsace", envNs),
+						zap.String("service_account_namespace", envNs),
+						zap.String("function_name", fn.ObjectMeta.Name),
+						zap.String("function_namespace", fn.ObjectMeta.Namespace))
+				}
+
+				// give fission-fetcher the global configmap and secrets access.
+				err = utils.SetupRoleBinding(gpm.logger, kubernetesClient, fv1.GlobalSecretConfigMapGetterRB, fv1.GlobalSecretConfigMapNS, fv1.GlobalSecretConfigMapGetterCR, fv1.ClusterRole, fv1.FissionFetcherSA, envNs)
+				if err != nil {
+					gpm.logger.Error("error creating rolebinding", zap.Error(err), zap.String("role_binding", fv1.GlobalSecretConfigMapGetterRB))
+				} else {
+					gpm.logger.Debug("successfully set up rolebinding of global config and secrets for fetcher service account for function",
+						zap.String("service_account", fv1.FissionFetcherSA),
+						zap.String("service_account_namespace", envNs),
 						zap.String("function_name", fn.ObjectMeta.Name),
 						zap.String("function_namespace", fn.ObjectMeta.Namespace))
 				}
@@ -193,9 +206,21 @@ func (gpm *GenericPoolManager) makeFuncController(fissionClient *crd.FissionClie
 					if err != nil {
 						gpm.logger.Error("error creating rolebinding", zap.Error(err), zap.String("role_binding", fv1.SecretConfigMapGetterRB))
 					} else {
-						gpm.logger.Debug("successfully set up rolebinding for fetcher service account for function",
+						gpm.logger.Debug("successfully set up rolebinding of local config and secrets for fetcher service account for function",
 							zap.String("service_account", fv1.FissionFetcherSA),
-							zap.String("service_account_namepsace", envNs),
+							zap.String("service_account_namespace", envNs),
+							zap.String("function_name", newFunc.ObjectMeta.Name),
+							zap.String("function_namespace", newFunc.ObjectMeta.Namespace))
+					}
+
+					// give fission-fetcher the global configmap and secrets access.
+					err = utils.SetupRoleBinding(gpm.logger, kubernetesClient, fv1.GlobalSecretConfigMapGetterRB, fv1.GlobalSecretConfigMapNS, fv1.GlobalSecretConfigMapGetterCR, fv1.ClusterRole, fv1.FissionFetcherSA, envNs)
+					if err != nil {
+						gpm.logger.Error("error creating rolebinding", zap.Error(err), zap.String("role_binding", fv1.GlobalSecretConfigMapGetterRB))
+					} else {
+						gpm.logger.Debug("successfully set up rolebinding of global config and secrets for fetcher service account for function",
+							zap.String("service_account", fv1.FissionFetcherSA),
+							zap.String("service_account_namespace", envNs),
 							zap.String("function_name", newFunc.ObjectMeta.Name),
 							zap.String("function_namespace", newFunc.ObjectMeta.Namespace))
 					}

@@ -158,6 +158,17 @@ func (deploy *NewDeploy) setupRBACObjs(deployNamespace string, fn *fv1.Function)
 		return err
 	}
 
+	// create rolebinding in global config-secrets namespace for fetcherSA.envNamespace to be able to get global secrets and configmaps
+	err = utils.SetupRoleBinding(deploy.logger, deploy.kubernetesClient, fv1.GlobalSecretConfigMapGetterRB, fv1.GlobalSecretConfigMapNS, fv1.GlobalSecretConfigMapGetterCR, fv1.ClusterRole, fv1.FissionFetcherSA, deployNamespace)
+	if err != nil {
+		deploy.logger.Error("error creating role binding for function",
+			zap.Error(err),
+			zap.String("role_binding", fv1.GlobalSecretConfigMapGetterRB),
+			zap.String("function_name", fn.ObjectMeta.Name),
+			zap.String("function_namespace", fn.ObjectMeta.Namespace))
+		return err
+	}
+
 	deploy.logger.Info("set up all RBAC objects for function",
 		zap.String("function_name", fn.ObjectMeta.Name),
 		zap.String("function_namespace", fn.ObjectMeta.Namespace))
