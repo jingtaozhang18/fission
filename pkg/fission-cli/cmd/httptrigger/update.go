@@ -18,6 +18,7 @@ package httptrigger
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -48,19 +49,24 @@ func (opts *UpdateSubCommand) do(input cli.Input) error {
 }
 
 func (opts *UpdateSubCommand) complete(input cli.Input) error {
-	htName := input.String(flagkey.HtName)
 	triggerNamespace := input.String(flagkey.NamespaceTrigger)
-
-	ht, err := opts.Client().V1().HTTPTrigger().Get(&metav1.ObjectMeta{
-		Name:      htName,
+	m := &metav1.ObjectMeta{
+		Name:      input.String(flagkey.HtName),
 		Namespace: triggerNamespace,
-	})
+	}
+	ht, err := opts.Client().V1().HTTPTrigger().Get(m)
 	if err != nil {
 		return errors.Wrap(err, "error getting HTTP trigger")
 	}
 
 	if input.IsSet(flagkey.HtUrl) {
-		ht.Spec.RelativeURL = input.String(flagkey.HtUrl)
+		triggerUrl := input.String(flagkey.HtUrl)
+		if triggerUrl == "/" {
+			return errors.New("url with only root path is not allowed")
+		} else if !strings.HasPrefix(triggerUrl, "/") {
+			triggerUrl = fmt.Sprintf("/%s", triggerUrl)
+		}
+		ht.Spec.RelativeURL = triggerUrl
 	}
 
 	if input.IsSet(flagkey.HtMethod) {

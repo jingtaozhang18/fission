@@ -2,6 +2,7 @@
 * 添加minikube和fission的安装、部署、升级脚本（charts文件下），可一键部署minikube基础环境和fission开发测试环境，并可进行迭代更新
 * 对fission CLI的查看函数日志的功能，添加从当前时间开始读、隐藏系统时间和根据时区调整日志时间的功能
 * 增加从pod中获取函数日志的方式，可以在不依赖任何日志组件的前提下，达到实时日志查看目标，方便用户自我调试
+* 允许用户在配置timetrigger触发时携带body体，实现对函数更加定制化的周期性调用
 
 # Fission: Serverless Functions for Kubernetes
 

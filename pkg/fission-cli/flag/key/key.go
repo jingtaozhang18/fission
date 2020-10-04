@@ -79,10 +79,11 @@ const (
 	HtFnWeight          = "weight"
 	HtFilter            = HtFnName
 
-	TtName   = resourceName
-	TtCron   = "cron"
-	TtFnName = "function"
-	TtRound  = "round"
+	TtName      = resourceName
+	TtCron      = "cron"
+	TtFnName    = "function"
+	TtRound     = "round"
+	TtParameter = "param"
 
 	MqtName            = resourceName
 	MqtFnName          = "function"

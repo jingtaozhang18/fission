@@ -46,7 +46,7 @@ func (opts *GetSubCommand) do(input cli.Input) error {
 func (opts *GetSubCommand) run(input cli.Input) error {
 	m := &metav1.ObjectMeta{
 		Name:      input.String(flagkey.HtName),
-		Namespace: input.String(flagkey.NamespaceFunction),
+		Namespace: input.String(flagkey.NamespaceTrigger),
 	}
 	ht, err := opts.Client().V1().HTTPTrigger().Get(m)
 	if err != nil {

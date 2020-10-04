@@ -44,6 +44,7 @@ func Commands() *cobra.Command {
 	}
 	wrapper.SetFlags(getCmd, flag.FlagSet{
 		Required: []flag.Flag{flag.HtName},
+		Optional: []flag.Flag{flag.NamespaceTrigger},
 	})
 
 	updateCmd := &cobra.Command{
