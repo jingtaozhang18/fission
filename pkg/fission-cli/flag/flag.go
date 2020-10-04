@@ -101,6 +101,8 @@ var (
 	FnExecutionTimeout      = Flag{Type: Int, Name: flagkey.FnExecutionTimeout, Aliases: []string{"ft"}, Usage: "Maximum time for a request to wait for the response from the function", DefaultValue: 60}
 	FnLogPod                = Flag{Type: String, Name: flagkey.FnLogPod, Usage: "Function pod name (use the latest pod name if unspecified)"}
 	FnLogFollow             = Flag{Type: Bool, Name: flagkey.FnLogFollow, Short: "f", Usage: "Specify if the logs should be streamed"}
+	FnLogFromNow            = Flag{Type: Bool, Name: flagkey.FnLogFromNow, Short: "n", Usage: "Show message from now"}
+	FnLogWithTime           = Flag{Type: Bool, Name: flagkey.FnLogWithTime, Short: "t", Usage: "Show message with time"}
 	FnLogDetail             = Flag{Type: Bool, Name: flagkey.FnLogDetail, Short: "d", Usage: "Display detailed information"}
 	FnLogDBType             = Flag{Type: String, Name: flagkey.FnLogDBType, Usage: "Log database type, e.g. influxdb (currently only influxdb is supported)", DefaultValue: "influxdb"}
 	FnLogReverseQuery       = Flag{Type: Bool, Name: flagkey.FnLogReverseQuery, Short: "r", Usage: "Specify the log reverse query base on time, it will be invalid if the 'follow' flag is specified"}
@@ -124,10 +126,11 @@ var (
 	HtFnWeight          = Flag{Type: IntSlice, Name: flagkey.HtFnWeight, Usage: "Weight for each function supplied with --function flag, in the same order. Used for canary deployment"}
 	HtFnFilter          = Flag{Type: String, Name: flagkey.HtFilter, Usage: "Name of the function for trigger(s)"}
 
-	TtName   = Flag{Type: String, Name: flagkey.TtName, Usage: "Time Trigger name"}
-	TtCron   = Flag{Type: String, Name: flagkey.TtCron, Usage: "Time trigger cron spec with each asterisk representing respectively second, minute, hour, the day of the month, month and day of the week. Also supports readable formats like '@every 5m', '@hourly'"}
-	TtFnName = Flag{Type: String, Name: flagkey.TtFnName, Usage: "Function name"}
-	TtRound  = Flag{Type: Int, Name: flagkey.TtRound, Usage: "Get next N rounds of invocation time", DefaultValue: 1}
+	TtName    = Flag{Type: String, Name: flagkey.TtName, Usage: "Time Trigger name"}
+	TtCron    = Flag{Type: String, Name: flagkey.TtCron, Usage: "Time trigger cron spec with each asterisk representing respectively second, minute, hour, the day of the month, month and day of the week. Also supports readable formats like '@every 5m', '@hourly'"}
+	TtFnName  = Flag{Type: String, Name: flagkey.TtFnName, Usage: "Function name"}
+	TtFnParam = Flag{Type: String, Name: flagkey.TtParameter, Usage: "The parameter pass to function"}
+	TtRound   = Flag{Type: Int, Name: flagkey.TtRound, Usage: "Get next N rounds of invocation time", DefaultValue: 1}
 
 	MqtName            = Flag{Type: String, Name: flagkey.MqtName, Usage: "Message queue trigger name"}
 	MqtFnName          = Flag{Type: String, Name: flagkey.MqtFnName, Usage: "Function name"}

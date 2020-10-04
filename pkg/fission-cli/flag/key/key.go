@@ -55,6 +55,8 @@ const (
 	FnTestTimeout           = "timeout"
 	FnLogPod                = "pod"
 	FnLogFollow             = "follow"
+	FnLogFromNow            = "fromnow"
+	FnLogWithTime           = "withtime"
 	FnLogDetail             = "detail"
 	FnLogDBType             = "dbtype"
 	FnLogReverseQuery       = "reverse"
@@ -77,10 +79,11 @@ const (
 	HtFnWeight          = "weight"
 	HtFilter            = HtFnName
 
-	TtName   = resourceName
-	TtCron   = "cron"
-	TtFnName = "function"
-	TtRound  = "round"
+	TtName      = resourceName
+	TtCron      = "cron"
+	TtFnName    = "function"
+	TtRound     = "round"
+	TtParameter = "param"
 
 	MqtName            = resourceName
 	MqtFnName          = "function"

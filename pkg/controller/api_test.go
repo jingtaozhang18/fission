@@ -310,6 +310,7 @@ func TestTimeTriggerApi(t *testing.T) {
 				Type: fv1.FunctionReferenceTypeFunctionName,
 				Name: "asdf",
 			},
+			Parameter: "{}",
 		},
 	}
 	_, err := g.Client().V1().TimeTrigger().Get(&metav1.ObjectMeta{Name: testTrigger.ObjectMeta.Name})

@@ -208,6 +208,7 @@ func (api *API) GetHandler() http.Handler {
 	r.HandleFunc("/v2/functions/{function}", api.FunctionApiGet).Methods("GET")
 	r.HandleFunc("/v2/functions/{function}", api.FunctionApiUpdate).Methods("PUT")
 	r.HandleFunc("/v2/functions/{function}", api.FunctionApiDelete).Methods("DELETE")
+	r.HandleFunc("/v2/functions/logs/{function}", api.FunctionPodLogs).Methods("GET")
 
 	r.HandleFunc("/v2/triggers/http", api.HTTPTriggerApiList).Methods("GET")
 	r.HandleFunc("/v2/triggers/http", api.HTTPTriggerApiCreate).Methods("POST")

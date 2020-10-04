@@ -687,6 +687,8 @@ type (
 
 		// The reference to function
 		FunctionReference `json:"functionref"`
+
+		Parameter string `json:"parameter"`
 	}
 
 	FailureType string
