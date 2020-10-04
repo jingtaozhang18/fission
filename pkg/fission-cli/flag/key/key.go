@@ -55,6 +55,8 @@ const (
 	FnTestTimeout           = "timeout"
 	FnLogPod                = "pod"
 	FnLogFollow             = "follow"
+	FnLogFromNow            = "fromnow"
+	FnLogWithTime           = "withtime"
 	FnLogDetail             = "detail"
 	FnLogDBType             = "dbtype"
 	FnLogReverseQuery       = "reverse"
