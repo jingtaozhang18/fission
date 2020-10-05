@@ -653,6 +653,8 @@ spec:
     matchLabels:
       svc: mqtrigger
       messagequeue: nats-streaming
+  strategy:
+    type: Recreate
   template:
     metadata:
       labels:
