@@ -593,8 +593,24 @@ func (fh functionHandler) collectFunctionMetric(start time.Time, rrt *RetryingRo
 		namespace: fh.function.ObjectMeta.Namespace,
 		name:      fh.function.ObjectMeta.Name,
 	}
+	// generate complete http labels
+	source := req.Header.Get("X-Fission-Flow-Source")
+	sourceType := req.Header.Get("X-Fission-Flow-Source-Type")
+	if len(sourceType) == 0 {
+		sourceType = "unknown"
+	}
+	if len(source) == 0 {
+		reqHost := req.Header.Get("Host")
+		if len(reqHost) != 0 {
+			source = sourceType + "." + reqHost
+		} else {
+			source = sourceType + ".unknown"
+		}
+	}
 	httpMetricLabels := &httpLabels{
 		method: req.Method,
+		source: source,
+		stype:  sourceType,
 	}
 	if fh.httpTrigger != nil {
 		httpMetricLabels.host = fh.httpTrigger.Spec.Host
@@ -605,8 +621,7 @@ func (fh functionHandler) collectFunctionMetric(start time.Time, rrt *RetryingRo
 	httpMetricLabels.code = resp.StatusCode
 	funcMetricLabels.cached = rrt.urlFromCache
 
-	functionCallCompleted(funcMetricLabels, httpMetricLabels,
-		duration, duration, resp.ContentLength)
+	functionCallCompleted(funcMetricLabels, httpMetricLabels, duration, duration, resp.ContentLength)
 
 	// tapService before invoking roundTrip for the serviceUrl
 	if rrt.urlFromCache {

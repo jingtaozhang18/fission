@@ -341,6 +341,8 @@ func invokeTriggeredFunction(conn AzureStorageConnection, sub *AzureQueueSubscri
 			request.Header.Set("X-Fission-MQTrigger-RetryCount", strconv.Itoa(i))
 		}
 		request.Header.Set("Content-Type", sub.contentType)
+		request.Header.Set("X-Fission-Flow-Source", fmt.Sprintf("azurequeue.%s", sub.queueName))
+		request.Header.Set("X-Fission-Flow-Source-Type", "azurequeue")
 
 		response, err := conn.httpClient.Do(request)
 		if err != nil {
