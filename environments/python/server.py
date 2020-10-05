@@ -7,6 +7,7 @@ import threading
 import time
 
 import redis
+import requests
 from flask import Flask, request, abort, g
 from gevent.pywsgi import WSGIServer
 from kafka import KafkaProducer
@@ -35,6 +36,15 @@ PUSHGATEWAY_URL_DEFAULT = "fission-prometheus-pushgateway.fission:9091"  # may b
 
 GLOBAL_CONFIG_KEY = "global"  # 全局配置文件别名
 LOCAL_CONFIG_KEY = "local"  # 局部配置文件别名
+
+FISSION_ROUTER_TEMPLATE_KEY = "fission-router-template"  # 可以通过全局配置文件中的FISSION_ROUTER_TEMPLATE_KEY自定义fission的路由位置模板
+FISSION_ROUTER_KEY = "fission-router"  # 可以通过全局配置文件中的FISSION_ROUTER_KEY自定义fission的路由位置
+FISSION_FLOW_KEY = "fission-flow"  # 可以通过全局配置文件中的FISSION_FLOW_KEY自定义fission流量使用的key
+
+FISSION_FLOW_DEFAULT_VALUE = "fission_flow_recorder_by_env"  # 默认记录fission流量使用的key
+
+FISSION_TYPE_FUNC = "func"
+FISSION_TYPE_KAFKA = "kafka"
 
 
 def import_src(path):
@@ -276,8 +286,90 @@ class FuncApp(Flask):
             g.cache = self.cache
             g.kafkaProducer_handler = self.kafkaProducer_handler
             g.redis_handler = self.redis_handler
-            res = self.userfunc()
+            g.access_fission_func = self.access_fission_func
+            g.kafka_send = self.kafka_send
+            self.pre_process()
+            try:
+                res = self.userfunc()
+            except Exception as e:
+                self.post_process(excep=e)
+                raise e
+            self.post_process()
             return res
+
+    def post_process(self, excep: Exception = None):
+        mq_resp_topic = request.headers.get("X-Fission-MQTrigger-RespTopic", None)
+        mq_error_topic = request.headers.get("X-Fission-MQTrigger-ErrorTopic", None)
+        if excep is None and mq_resp_topic is not None and len(mq_resp_topic) != 0:
+            labels_dict = {
+                "source": ".".join([FISSION_TYPE_FUNC, self.func_namespace, self.func_name]),
+                "destination": ".".join(["kafka", mq_resp_topic]),
+                "stype": FISSION_TYPE_FUNC,
+                "dtype": FISSION_TYPE_KAFKA,
+                "method": FISSION_TYPE_KAFKA,
+                "code": "unknown"  # todo 记录推送的结果
+            }
+            self.metric_handler.counter("", labels_dict, 1, complete_name=self.configs.get(GLOBAL_CONFIG_KEY, {}).get(FISSION_FLOW_KEY, FISSION_FLOW_DEFAULT_VALUE))
+        if excep is not None and mq_error_topic is not None and len(mq_error_topic) != 0:
+            labels_dict = {
+                "source": ".".join([FISSION_TYPE_FUNC, self.func_namespace, self.func_name]),
+                "destination": ".".join(["kafka", mq_error_topic]),
+                "stype": FISSION_TYPE_FUNC,
+                "dtype": FISSION_TYPE_KAFKA,
+                "method": FISSION_TYPE_KAFKA,
+                "code": "unknown"  # todo 记录推送的结果
+            }
+            self.metric_handler.counter("", labels_dict, 1, complete_name=self.configs.get(GLOBAL_CONFIG_KEY, {}).get(FISSION_FLOW_KEY, FISSION_FLOW_DEFAULT_VALUE))
+
+    def pre_process(self):
+        """
+        处理请求之前先行处理
+        :return:
+        """
+        # 将记录消息队列到函数的数据流的任务转移到router组件中完成
+        pass
+
+    def access_fission_func(self, namespace: str, name: str, method: str, url=None, params=None, data=None, json=None, **kwargs):
+        # 构造fission函数的url地址
+        domain = self.configs.get(GLOBAL_CONFIG_KEY, {}).get(FISSION_ROUTER_KEY, "http://router.fission")
+        url = self.configs.get(GLOBAL_CONFIG_KEY, {}).get(FISSION_ROUTER_TEMPLATE_KEY, "{domain}/{namespace}/{name}") \
+            .format(domain=domain, namespace=namespace, name=name) if url is None else url
+
+        # 同步官方中的请求方式，设置kwargs选项
+        if method == "get":
+            kwargs.setdefault('allow_redirects', True)
+        if method == "options":
+            kwargs.setdefault("allow_redirects", True)
+        if method == "head":
+            kwargs.setdefault('allow_redirects', False)
+
+        headers = {
+            "X-Fission-Flow-Source": ".".join([FISSION_TYPE_FUNC, self.func_namespace, self.func_name]),
+            "X-Fission-Flow-Source-Type": FISSION_TYPE_FUNC
+        }
+        if "headers" in kwargs and type(kwargs["headers"]) == dict:
+            headers.update(kwargs.get("headers"))
+        resp = requests.request(method, url, params=params, data=data, json=json, headers=headers, **kwargs)
+
+        # 将记录函数到函数的数据流的任务转移到router组件中完成
+        if resp.status_code != 200:
+            self.logger.error("access_fission_func url: {}, status_code:{}".format(url, resp.status_code))
+        else:
+            self.logger.debug("access_fission_func url: {}, status_code:{}".format(url, resp.status_code))
+        return resp
+
+    def kafka_send(self, topic, value=None, key=None, headers=None, partition=None, timestamp_ms=None):
+        ret = self.kafkaProducer_handler.send(topic, value, key, headers, partition, timestamp_ms)
+        labels_dict = {
+            "source": ".".join([FISSION_TYPE_FUNC, self.func_namespace, self.func_name]),
+            "destination": ".".join(["kafka", topic]),
+            "stype": FISSION_TYPE_FUNC,
+            "dtype": FISSION_TYPE_KAFKA,
+            "method": FISSION_TYPE_KAFKA,
+            "code": "unknown"  # todo 记录推送的结果
+        }
+        self.metric_handler.counter("", labels_dict, 1, complete_name=self.configs.get(GLOBAL_CONFIG_KEY, {}).get(FISSION_FLOW_KEY, FISSION_FLOW_DEFAULT_VALUE))
+        return ret
 
     def set_logger_level(self):
         """set logger level"""

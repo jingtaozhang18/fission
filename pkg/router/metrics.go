@@ -31,11 +31,15 @@ type (
 	// path is the relative URL of the request
 	// method is the HTTP method ("GET", "POST", ...)
 	// code is the HTTP status code
+	// source the source of request
+	// stype the type of source
 	httpLabels struct {
 		host   string
 		path   string
 		method string
 		code   int
+		source string
+		stype  string
 	}
 )
 
@@ -52,6 +56,15 @@ var (
 	// code: http status code
 	// path: the client call the function on which http path
 	// method: the function's http method
+
+	// fission flow recorder labels
+	flowLabelStrings = []string{"source", "destination", "stype", "dtype", "method", "code"}
+	// source: "func.{namespace}.{name}" or "{kafka|nats|azurequeue|...}.{topic}"
+	// destination: "func.{namespace}.{name}" or "{kafka|nats|azurequeue|...}.{topic}"
+	// stype: the type of source
+	// dtype: the type of destination
+	// method: the function's http method
+	// code: http status code
 	functionCalls = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "fission_function_calls_total",
@@ -90,6 +103,13 @@ var (
 		},
 		labelsStrings,
 	)
+	fissionFlowRecorder = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "fission_flow_recorder_by_router",
+			Help: "recorder of network flow",
+		},
+		flowLabelStrings,
+	)
 )
 
 func init() {
@@ -98,6 +118,7 @@ func init() {
 	prometheus.MustRegister(functionCallDuration)
 	prometheus.MustRegister(functionCallOverhead)
 	prometheus.MustRegister(functionCallResponseSize)
+	prometheus.MustRegister(fissionFlowRecorder)
 }
 
 func labelsToStrings(f *functionLabels, h *httpLabels) []string {
@@ -118,10 +139,26 @@ func labelsToStrings(f *functionLabels, h *httpLabels) []string {
 	}
 }
 
+func flowLabelsToStrings(f *functionLabels, h *httpLabels) []string {
+	// "source", "destination", "stype", "dtype", "method", "code"
+	return []string{
+		h.source,
+		fmt.Sprintf("func.%s.%s", f.namespace, f.name),
+		h.stype,
+		"func",
+		h.method,
+		fmt.Sprint(h.code),
+	}
+}
+
 func functionCallCompleted(f *functionLabels, h *httpLabels, overhead, duration time.Duration, respSize int64) {
 	atomic.AddUint64(&globalFunctionCallCount, 1)
 
 	l := labelsToStrings(f, h)
+	fl := flowLabelsToStrings(f, h)
+
+	// recorder flow
+	fissionFlowRecorder.WithLabelValues(fl...).Inc()
 
 	// overhead: time from request ingress into router upto proxing into function pod
 	functionCallOverhead.WithLabelValues(l...).Observe(float64(overhead.Nanoseconds()) / 1e9)

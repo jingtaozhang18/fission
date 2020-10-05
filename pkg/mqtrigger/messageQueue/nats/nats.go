@@ -146,6 +146,8 @@ func msgHandler(nats *Nats, trigger *fv1.MessageQueueTrigger) func(*ns.Msg) {
 			"X-Fission-MQTrigger-Topic":      trigger.Spec.Topic,
 			"X-Fission-MQTrigger-RespTopic":  trigger.Spec.ResponseTopic,
 			"X-Fission-MQTrigger-ErrorTopic": trigger.Spec.ErrorTopic,
+			"X-Fission-Flow-Source":          fmt.Sprintf("nats.%s", trigger.Spec.Topic),
+			"X-Fission-Flow-Source-Type":     "nats",
 			"Content-Type":                   trigger.Spec.ContentType,
 		}
 

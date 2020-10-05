@@ -235,6 +235,8 @@ func kafkaMsgHandler(kafka *Kafka, producer sarama.SyncProducer, trigger *fv1.Me
 		"X-Fission-MQTrigger-RespTopic":  trigger.Spec.ResponseTopic,
 		"X-Fission-MQTrigger-ErrorTopic": trigger.Spec.ErrorTopic,
 		"Content-Type":                   trigger.Spec.ContentType,
+		"X-Fission-Flow-Source":          fmt.Sprintf("kafka.%s", trigger.Spec.Topic),
+		"X-Fission-Flow-Source-Type":     "kafka",
 	}
 
 	// Create request
