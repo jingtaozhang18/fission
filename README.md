@@ -5,6 +5,7 @@
 * 允许用户在配置timetrigger触发时携带body体，实现对函数更加定制化的周期性调用
 * 允许所有命名空间的fission函数配置使用fission-secret-configmap命名空间下的configmap和secret，可将其作为全局默认参数来使用，减少用户在沟通集群相关参数方面的成本
 * 添加可以配置的日志投递功能，并提供全局和局部的日志投递配置相结合的方式，允许用户更自由的将日志输出到各种日志收集后端
+* 添加记录函数、队列之间数据流动的组件
 
 # Fission: Serverless Functions for Kubernetes
 
