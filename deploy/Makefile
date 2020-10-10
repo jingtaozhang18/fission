@@ -27,6 +27,10 @@ FISSION_PREUPGRADECHECKS_IMAGE_TAG=$(DEFAULT_TAG)
 FISSION_FLUENTD_WRAPPER_IMAGE_NAME="jingtao/fission-fluentd-wrapper"
 FISSION_FLUENTD_WRAPPER_IMAGE_TAG=$(DEFAULT_TAG)
 
+FISSION_DATA_FLOW_VISUALIZATION_FRONTEND_IMAGE_NAME="jingtao/fission_data_flow_visualization_frontend"
+FISSION_DATA_FLOW_VISUALIZATION_FRONTEND_TAG=$(DEFAULT_TAG)
+FISSION_DATA_FLOW_VISUALIZATION_BACKEND_IMAGE_NAME="jingtao/fission_data_flow_visualization_backend"
+FISSION_DATA_FLOW_VISUALIZATION_BACKEND_TAG=$(DEFAULT_TAG)
 
 ## minikube的运维命令
 minikube_start:
@@ -146,6 +150,17 @@ build_fission_builder:
 build_fluentd_wrapper:
 		DOCKER_TLS_VERIFY=$(DOCKER_TLS_VERIFY) DOCKER_HOST=$(DOCKER_HOST) DOCKER_CERT_PATH=$(DOCKER_CERT_PATH) MINIKUBE_ACTIVE_DOCKERD=$(MINIKUBE_ACTIVE_DOCKERD) \
     		docker build -t $(FISSION_FLUENTD_WRAPPER_IMAGE_NAME):$(FISSION_FLUENTD_WRAPPER_IMAGE_TAG) -f ../cmd/fluentd-wrapper/Dockerfile.fluentd-wrapper ../
+
+build_data_flow_visualization_frontend:
+	cd $(PROJECT_DIR)/cmd/data-flow-visualization/app-frontend && \
+		npm run build && \
+		DOCKER_TLS_VERIFY=$(DOCKER_TLS_VERIFY) DOCKER_HOST=$(DOCKER_HOST) DOCKER_CERT_PATH=$(DOCKER_CERT_PATH) MINIKUBE_ACTIVE_DOCKERD=$(MINIKUBE_ACTIVE_DOCKERD) \
+		docker build -t $(FISSION_DATA_FLOW_VISUALIZATION_FRONTEND_IMAGE_NAME):$(FISSION_DATA_FLOW_VISUALIZATION_FRONTEND_TAG) -f Dockerfile.data-flow-visualization-frontend .
+
+build_data_flow_visualization_backend:
+	cd $(PROJECT_DIR)/cmd/data-flow-visualization/app-backend && \
+		DOCKER_TLS_VERIFY=$(DOCKER_TLS_VERIFY) DOCKER_HOST=$(DOCKER_HOST) DOCKER_CERT_PATH=$(DOCKER_CERT_PATH) MINIKUBE_ACTIVE_DOCKERD=$(MINIKUBE_ACTIVE_DOCKERD) \
+		docker build -t $(FISSION_DATA_FLOW_VISUALIZATION_BACKEND_IMAGE_NAME):$(FISSION_DATA_FLOW_VISUALIZATION_BACKEND_TAG) -f Dockerfile.data-flow-visualization-backend .
 
 # 编译fission CLI到某个位置，可根据实际情况修改
 build_fission_cli:

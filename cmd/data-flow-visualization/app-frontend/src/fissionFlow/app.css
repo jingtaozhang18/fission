@@ -1,0 +1,9 @@
+.flexMainBody {
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.flexCrossBody {
+    flex-direction: row;
+    justify-content: flex-start;
+}

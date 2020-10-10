@@ -1,0 +1,7 @@
+flask ~= 1.1.2
+httplib2
+python-dateutil
+requests==2.24.0
+redis
+hiredis
+gevent
