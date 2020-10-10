@@ -27,6 +27,10 @@ FISSION_PREUPGRADECHECKS_IMAGE_TAG=$(DEFAULT_TAG)
 FISSION_FLUENTD_WRAPPER_IMAGE_NAME="jingtao/fission-fluentd-wrapper"
 FISSION_FLUENTD_WRAPPER_IMAGE_TAG=$(DEFAULT_TAG)
 
+FISSION_DATA_FLOW_VISUALIZATION_FRONTEND_IMAGE_NAME="jingtao/fission_data_flow_visualization_frontend"
+FISSION_DATA_FLOW_VISUALIZATION_FRONTEND_TAG=$(DEFAULT_TAG)
+FISSION_DATA_FLOW_VISUALIZATION_BACKEND_IMAGE_NAME="jingtao/fission_data_flow_visualization_backend"
+FISSION_DATA_FLOW_VISUALIZATION_BACKEND_TAG=$(DEFAULT_TAG)
 
 ## minikube的运维命令
 minikube_start:
@@ -107,6 +111,8 @@ install_fission: build_all
 		 	--set fetcher.image=$(FISSION_FETCHER_IMAGE_NAME),fetcher.imageTag=$(FISSION_FETCHER_IMAGE_TAG) \
 		 	--set logger.fluentdImage=$(FISSION_FLUENTD_WRAPPER_IMAGE_NAME),logger.fluentdImageTag=$(FISSION_FLUENTD_WRAPPER_IMAGE_TAG) \
 		 	--set preUpgradeChecks.image=$(FISSION_PREUPGRADECHECKS_IMAGE_NAME),preUpgradeChecks.tag=$(FISSION_PREUPGRADECHECKS_IMAGE_TAG) \
+		 	--set dataFlowVisualization.frontend.image=$(FISSION_DATA_FLOW_VISUALIZATION_FRONTEND_IMAGE_NAME),dataFlowVisualization.frontend.tag=$(FISSION_DATA_FLOW_VISUALIZATION_FRONTEND_TAG) \
+		 	--set dataFlowVisualization.backend.image=$(FISSION_DATA_FLOW_VISUALIZATION_BACKEND_IMAGE_NAME),dataFlowVisualization.backend.tag=$(FISSION_DATA_FLOW_VISUALIZATION_BACKEND_TAG) \
 			$(PROJECT_DIR)/charts/fission-all
 	echo "grafana password:"
 	kubectl --context $(CONTEXT_NAME) get secret --namespace $(FISSION_NAMESPACE) fission-grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
@@ -123,11 +129,13 @@ update_fission_image: build_all
 			--set fetcher.image=$(FISSION_FETCHER_IMAGE_NAME),fetcher.imageTag=$(FISSION_FETCHER_IMAGE_TAG) \
 			--set logger.fluentdImage=$(FISSION_FLUENTD_WRAPPER_IMAGE_NAME),logger.fluentdImageTag=$(FISSION_FLUENTD_WRAPPER_IMAGE_TAG) \
 			--set preUpgradeChecks.image=$(FISSION_PREUPGRADECHECKS_IMAGE_NAME),preUpgradeChecks.tag=$(FISSION_PREUPGRADECHECKS_IMAGE_TAG) \
+			--set dataFlowVisualization.frontend.image=$(FISSION_DATA_FLOW_VISUALIZATION_FRONTEND_IMAGE_NAME),dataFlowVisualization.frontend.tag=$(FISSION_DATA_FLOW_VISUALIZATION_FRONTEND_TAG) \
+			--set dataFlowVisualization.backend.image=$(FISSION_DATA_FLOW_VISUALIZATION_BACKEND_IMAGE_NAME),dataFlowVisualization.backend.tag=$(FISSION_DATA_FLOW_VISUALIZATION_BACKEND_TAG) \
 			$(PROJECT_DIR)/charts/fission-all
 
 
 ## fission镜像管理
-build_all: build_fission_bundle build_fission_fetcher build_fission_preupgradechecks build_fission_builder build_fluentd_wrapper build_fission_cli
+build_all: build_fission_bundle build_fission_fetcher build_fission_preupgradechecks build_fission_builder build_fluentd_wrapper build_data_flow_visualization_frontend build_data_flow_visualization_backend build_fission_cli
 
 
 build_fission_bundle:
@@ -149,6 +157,17 @@ build_fission_builder:
 build_fluentd_wrapper:
 	DOCKER_TLS_VERIFY=$(DOCKER_TLS_VERIFY) DOCKER_HOST=$(DOCKER_HOST) DOCKER_CERT_PATH=$(DOCKER_CERT_PATH) MINIKUBE_ACTIVE_DOCKERD=$(MINIKUBE_ACTIVE_DOCKERD) \
 		docker build -t $(FISSION_FLUENTD_WRAPPER_IMAGE_NAME):$(FISSION_FLUENTD_WRAPPER_IMAGE_TAG) -f $(PROJECT_DIR)/cmd/fluentd-wrapper/Dockerfile.fluentd-wrapper $(PROJECT_DIR)
+
+build_data_flow_visualization_frontend:
+	cd $(PROJECT_DIR)/cmd/data-flow-visualization/app-frontend && \
+		npm run build && \
+		DOCKER_TLS_VERIFY=$(DOCKER_TLS_VERIFY) DOCKER_HOST=$(DOCKER_HOST) DOCKER_CERT_PATH=$(DOCKER_CERT_PATH) MINIKUBE_ACTIVE_DOCKERD=$(MINIKUBE_ACTIVE_DOCKERD) \
+		docker build -t $(FISSION_DATA_FLOW_VISUALIZATION_FRONTEND_IMAGE_NAME):$(FISSION_DATA_FLOW_VISUALIZATION_FRONTEND_TAG) -f Dockerfile.data-flow-visualization-frontend .
+
+build_data_flow_visualization_backend:
+	cd $(PROJECT_DIR)/cmd/data-flow-visualization/app-backend && \
+		DOCKER_TLS_VERIFY=$(DOCKER_TLS_VERIFY) DOCKER_HOST=$(DOCKER_HOST) DOCKER_CERT_PATH=$(DOCKER_CERT_PATH) MINIKUBE_ACTIVE_DOCKERD=$(MINIKUBE_ACTIVE_DOCKERD) \
+		docker build -t $(FISSION_DATA_FLOW_VISUALIZATION_BACKEND_IMAGE_NAME):$(FISSION_DATA_FLOW_VISUALIZATION_BACKEND_TAG) -f Dockerfile.data-flow-visualization-backend .
 
 # 编译fission CLI到某个位置，可根据实际情况修改
 build_fission_cli:
@@ -224,6 +243,10 @@ PUBLIC_FISSION_PREUPGRADECHECKS_IMAGE_NAME="fuxing/fission-preupgradechecks"
 PUBLIC_FISSION_PREUPGRADECHECKS_IMAGE_TAG=$(PUBLIC_DEFAULT_TAG)
 PUBLIC_FISSION_FLUENTD_WRAPPER_IMAGE_NAME="fuxing/fission-fluentd-wrapper"
 PUBLIC_FISSION_FLUENTD_WRAPPER_IMAGE_TAG=$(PUBLIC_DEFAULT_TAG)
+PUBLIC_FISSION_DATA_FLOW_VISUALIZATION_FRONTEND_IMAGE_NAME="jingtao/fission_data_flow_visualization_frontend"
+PUBLIC_FISSION_DATA_FLOW_VISUALIZATION_FRONTEND_TAG=$(PUBLIC_DEFAULT_TAG)
+PUBLIC_FISSION_DATA_FLOW_VISUALIZATION_BACKEND_IMAGE_NAME="jingtao/fission_data_flow_visualization_backend"
+PUBLIC_FISSION_DATA_FLOW_VISUALIZATION_BACKEND_TAG=$(PUBLIC_DEFAULT_TAG)
 PUBLIC_FISSION_ENV_PYTHON_IMAGE_NAME="fuxing/env/python"
 PUBLIC_FISSION_ENV_PYTHON_IMAGE_TAG="v4"
 
@@ -241,6 +264,8 @@ install_fission_public:
 			--set fetcher.image=$(PUBLIC_FISSION_FETCHER_IMAGE_NAME),fetcher.imageTag=$(PUBLIC_FISSION_FETCHER_IMAGE_TAG) \
 			--set logger.fluentdImage=$(PUBLIC_FISSION_FLUENTD_WRAPPER_IMAGE_NAME),logger.fluentdImageTag=$(PUBLIC_FISSION_FLUENTD_WRAPPER_IMAGE_TAG) \
 			--set preUpgradeChecks.image=$(PUBLIC_FISSION_PREUPGRADECHECKS_IMAGE_NAME),preUpgradeChecks.tag=$(PUBLIC_FISSION_PREUPGRADECHECKS_IMAGE_TAG) \
+			--set dataFlowVisualization.frontend.image=$(PUBLIC_FISSION_DATA_FLOW_VISUALIZATION_FRONTEND_IMAGE_NAME),dataFlowVisualization.frontend.tag=$(PUBLIC_FISSION_DATA_FLOW_VISUALIZATION_FRONTEND_TAG) \
+			--set dataFlowVisualization.backend.image=$(PUBLIC_FISSION_DATA_FLOW_VISUALIZATION_BACKEND_IMAGE_NAME),dataFlowVisualization.backend.tag=$(PUBLIC_FISSION_DATA_FLOW_VISUALIZATION_BACKEND_TAG) \
 			$(PROJECT_DIR)/charts/fission-all
 	echo "grafana password:"
 	kubectl --context $(CONTEXT_NAME) get secret --namespace $(FISSION_NAMESPACE) fission-grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
@@ -256,5 +281,7 @@ update_fission_image_public:
 			--set fetcher.image=$(PUBLIC_FISSION_FETCHER_IMAGE_NAME),fetcher.imageTag=$(PUBLIC_FISSION_FETCHER_IMAGE_TAG) \
 			--set logger.fluentdImage=$(PUBLIC_FISSION_FLUENTD_WRAPPER_IMAGE_NAME),logger.fluentdImageTag=$(PUBLIC_FISSION_FLUENTD_WRAPPER_IMAGE_TAG) \
 			--set preUpgradeChecks.image=$(PUBLIC_FISSION_PREUPGRADECHECKS_IMAGE_NAME),preUpgradeChecks.tag=$(PUBLIC_FISSION_PREUPGRADECHECKS_IMAGE_TAG) \
+			--set dataFlowVisualization.frontend.image=$(PUBLIC_FISSION_DATA_FLOW_VISUALIZATION_FRONTEND_IMAGE_NAME),dataFlowVisualization.frontend.tag=$(PUBLIC_FISSION_DATA_FLOW_VISUALIZATION_FRONTEND_TAG) \
+			--set dataFlowVisualization.backend.image=$(PUBLIC_FISSION_DATA_FLOW_VISUALIZATION_BACKEND_IMAGE_NAME),dataFlowVisualization.backend.tag=$(PUBLIC_FISSION_DATA_FLOW_VISUALIZATION_BACKEND_TAG) \
 			$(PROJECT_DIR)/charts/fission-all
 	fission --kube-context $(PUBLIC_CONTEXT) env update --name python --image $(PUBLIC_REPO)/$(PUBLIC_FISSION_ENV_PYTHON_IMAGE_NAME):$(PUBLIC_FISSION_ENV_PYTHON_IMAGE_TAG) --builder fission/python-builder:latest --graceperiod 10
