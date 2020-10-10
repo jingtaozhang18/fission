@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: data-flow
+  labels:
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    svc: data-flow
+    application: fission-data-flow
+spec:
+  selector:
+    matchLabels:
+      application: fission-data-flow
+      svc: data-flow
+  template:
+    metadata:
+      labels:
+        application: fission-data-flow
+        svc: data-flow
+    spec:
+      containers:
+        - name: data-flow-backend
+          {{- if .Values.repository }}
+          image: "{{ .Values.repository }}/{{ .Values.dataFlowVisualization.backend.image }}:{{ .Values.dataFlowVisualization.backend.tag }}"
+          {{ else }}
+          image: "{{ .Values.dataFlowVisualization.backend.image }}:{{ .Values.dataFlowVisualization.backend.tag }}"
+          {{- end }}
+          imagePullPolicy: {{ .Values.pullPolicy }}
+          env:
+            - name: PROMETHEUS_SERVER_URL
+              value: {{ .Release.Name }}-prometheus-server.fission
+        - name: data-flow-frontend
+          {{- if .Values.repository }}
+          image: "{{ .Values.repository }}/{{ .Values.dataFlowVisualization.frontend.image }}:{{ .Values.dataFlowVisualization.frontend.tag }}"
+          {{ else }}
+          image: "{{ .Values.dataFlowVisualization.frontend.image }}:{{ .Values.dataFlowVisualization.frontend.tag }}"
+          {{- end }}
+          imagePullPolicy: {{ .Values.pullPolicy }}
+          env:
+            - name: PROMETHEUS_SERVER_URL
+              value: {{ .Release.Name }}-prometheus-server.fission
+          ports:
+            - containerPort: 80
+              name: server

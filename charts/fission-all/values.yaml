@@ -331,3 +331,12 @@ mqt_keda:
     rabbitmq:
       image: fission/keda-rabbitmq-http-connector
       tag: 1
+
+## 数据流可视化组件
+dataFlowVisualization:
+  frontend:
+    image: jingtao/fission_data_flow_visualization_frontend
+    tag: v1
+  backend:
+    image: jingtao/fission_data_flow_visualization_frontend
+    tag: v1
