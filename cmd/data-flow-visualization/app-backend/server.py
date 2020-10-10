@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 import json
+import os
 import time
 
 import requests
 from flask import Flask, request
 from gevent.pywsgi import WSGIServer
+
+PROMETHEUS_SERVER = "http://{}/api/v1/query".format(os.environ.get("PROMETHEUS_SERVER_URL", "fission-prometheus-server.fission"))
 
 
 class FuncApp(Flask):
@@ -14,15 +17,13 @@ class FuncApp(Flask):
         @self.route('/fission-build-in-funcs/fission-data-flow', methods=['POST'])
         def load():
             params = request.json
-            # todo 需要改成可以配置的
-            url = "http://fission-prometheus-server.fission/api/v1/query"
             default_params = {
                 "query": "sum(rate(fission_flow_recorder_by_router[{}])) by (source, destination, stype, dtype, method, code) * 60".format(params.get("step", "5m")),
                 "time": int(time.time())
             }
             default_params.update(params)
             self.logger.info("router: " + json.dumps(default_params))
-            resp_router = requests.get(url, params=default_params)
+            resp_router = requests.get(PROMETHEUS_SERVER, params=default_params)
             resp_router = json.loads(resp_router.text)
             default_params = {
                 "query": "sum(rate(fission_flow_recorder_by_env_total[{}])) by (source, destination, stype, dtype, method, code) * 60".format(
@@ -31,7 +32,7 @@ class FuncApp(Flask):
             }
             default_params.update(params)
             self.logger.info("env: " + json.dumps(default_params))
-            resp_env = requests.get(url, params=default_params)
+            resp_env = requests.get(PROMETHEUS_SERVER, params=default_params)
             resp_env = json.loads(resp_env.text)
             result = {
                 "status_router": "success",
