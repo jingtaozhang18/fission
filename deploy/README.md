@@ -2,11 +2,12 @@
 
 ## 部署使用的命令版本如下
 
-| command  | version |
-| :------: | :-----: |
-| minikube | v1.12.3 |
-| kubectl  | v1.18.5 |
-|   helm   | v3.2.4  |
+| command  |  version   |
+| :------: | :--------: |
+| minikube |  v1.12.3   |
+| kubectl  |  v1.18.5   |
+|   helm   |   v3.2.4   |
+|  ktctl   | 0.0.13-rc7 |
 
 
 ## 部署流程
