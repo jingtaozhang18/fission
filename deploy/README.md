@@ -51,10 +51,20 @@ deploy$ make init_fission_cluster
 编译Fission的组件镜像，包括：
 
 * Bundle
+
 * Fetcher
+
 * Preupgradechecks
+
 * Builder
+
 * Cli
+
+* FluentdWrapper
+
+* DataFlowVisualizationFrontend
+
+* DataFlowVisualizationBackend
 
 编译Fission的ENV环境，包括：
 
@@ -63,3 +73,22 @@ deploy$ make init_fission_cluster
 使用helm3部署Fission环境，并创建一个Python的ENV环境。
 
 *ps：部署脚本只兼容`fission-all`，对`fission-core`暂时不兼容*
+
+## 开发工具
+
+在对某个组件的代码进行修改的时候，可以采用本地运行该组件，使用`ktctl`工具替换掉集群中对应的组件，将流量导向本地运行的组件，同时使用http代理将本地运行的组件的流量导回集群中。参考命令：
+
+```bash
+deploy$ make kt_vpn
+deploy$ make kt_exchange_executor
+```
+
+同时提供推送全部改动过的fission镜像到仓库中，并通过仓库中的镜像在其他的集群中部署Fission服务。相关命令如下：
+
+``` bash
+deploy$ make push_fission_images
+deploy$ make install_fission_public
+```
+
+*脚本中的仓库地址`ml.jingtao.fun`是jingtao的私有仓库，但是暂时没有认证保护，请大佬们手下留情，之后会设置密码限制推送*
+
