@@ -104,7 +104,7 @@ install_keda:
 ## fission的安装
 install_fission: build_all
 	kubectl --context $(CONTEXT_NAME) create namespace $(FISSION_NAMESPACE)
-	cd $(PROJECT_DIR)/charts/fission-all && https_proxy=http://hp.jingtao.fun:1080 helm dependency update && cd -
+	cd $(PROJECT_DIR)/charts/fission-all && https_proxy=$(PROXY) helm dependency update && cd -
 	https_proxy=$(PROXY) \
 		helm --kube-context $(CONTEXT_NAME) install --namespace $(FISSION_NAMESPACE) --name-template $(TEMPLATE_NAME) \
 		 	-f minikube-fission-values.yaml \
@@ -122,7 +122,7 @@ install_fission: build_all
 	kubectl --context $(CONTEXT_NAME) get secret --namespace $(FISSION_NAMESPACE) fission-grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
 
 update_fission_image: build_all
-	cd $(PROJECT_DIR)/charts/fission-all && https_proxy=http://hp.jingtao.fun:1080 helm dependency update && cd -
+	cd $(PROJECT_DIR)/charts/fission-all && https_proxy=$(PROXY) helm dependency update && cd -
 	https_proxy=$(PROXY) \
 		helm --kube-context $(CONTEXT_NAME) --namespace $(FISSION_NAMESPACE) upgrade $(TEMPLATE_NAME) \
 			-f minikube-fission-values.yaml \
@@ -139,7 +139,7 @@ update_fission_image: build_all
 
 
 ## fission镜像管理
-build_all: build_fission_bundle build_fission_fetcher build_fission_preupgradechecks build_fission_builder build_fluentd_wrapper build_data_flow_visualization_frontend build_data_flow_visualization_backend build_fission_cli
+build_all: build_fission_bundle build_fission_fetcher build_fission_preupgradechecks build_fission_builder build_fluentd_wrapper build_data_flow_visualization_frontend build_data_flow_visualization_backend build_fission_cli build_env_python
 
 
 build_fission_bundle:
@@ -177,20 +177,18 @@ build_data_flow_visualization_backend:
 build_fission_cli:
 	cd $(PROJECT_DIR)/cmd/fission-cli && go build -o ~/go/bin/fission
 
+build_env_python:
+	cd $(PROJECT_DIR)/environments/python && \
+		DOCKER_TLS_VERIFY=$(DOCKER_TLS_VERIFY) DOCKER_HOST=$(DOCKER_HOST) DOCKER_CERT_PATH=$(DOCKER_CERT_PATH) MINIKUBE_ACTIVE_DOCKERD=$(MINIKUBE_ACTIVE_DOCKERD) \
+		docker build -t $(FISSION_ENV_PYTHON_IMAGE_NAME):$(FISSION_ENV_PYTHON_IMAGE_TAG) .
 
 ## fission 环境部署
-fission_env_init:
-	cd $(PROJECT_DIR)/environments/python && \
-		DOCKER_TLS_VERIFY=$(DOCKER_TLS_VERIFY) DOCKER_HOST=$(DOCKER_HOST) DOCKER_CERT_PATH=$(DOCKER_CERT_PATH) MINIKUBE_ACTIVE_DOCKERD=$(MINIKUBE_ACTIVE_DOCKERD) \
-		docker build -t $(FISSION_ENV_PYTHON_IMAGE_NAME):$(FISSION_ENV_PYTHON_IMAGE_TAG) . && \
-		fission --kube-context $(CONTEXT_NAME) env create --name python --image $(FISSION_ENV_PYTHON_IMAGE_NAME):$(FISSION_ENV_PYTHON_IMAGE_TAG) --builder fission/python-builder:latest --graceperiod 10
+fission_env_init: build_env_python
+	fission --kube-context $(CONTEXT_NAME) env create --name python --image $(FISSION_ENV_PYTHON_IMAGE_NAME):$(FISSION_ENV_PYTHON_IMAGE_TAG) --builder fission/python-builder:latest --graceperiod 10
 
 ## fission 环境更新
-fission_env_update:
-	cd $(PROJECT_DIR)/environments/python && \
-		DOCKER_TLS_VERIFY=$(DOCKER_TLS_VERIFY) DOCKER_HOST=$(DOCKER_HOST) DOCKER_CERT_PATH=$(DOCKER_CERT_PATH) MINIKUBE_ACTIVE_DOCKERD=$(MINIKUBE_ACTIVE_DOCKERD) \
-		docker build -t $(FISSION_ENV_PYTHON_IMAGE_NAME):$(FISSION_ENV_PYTHON_IMAGE_TAG) . && \
-		fission --kube-context $(CONTEXT_NAME) env update --name python --image $(FISSION_ENV_PYTHON_IMAGE_NAME):$(FISSION_ENV_PYTHON_IMAGE_TAG) --graceperiod 10
+fission_env_update: build_env_python
+	fission --kube-context $(CONTEXT_NAME) env update --name python --image $(FISSION_ENV_PYTHON_IMAGE_NAME):$(FISSION_ENV_PYTHON_IMAGE_TAG) --graceperiod 10
 
 
 ## 代理相关配置
@@ -246,29 +244,30 @@ uninstall_fission:
 
 PUBLIC_CONTEXT=minikube
 PUBLIC_DEFAULT_TAG="v11"
-PUBLIC_REPO="ml.jingtao.fun"
-PUBLIC_FISSION_IMAGE_NAME="jingtao/fission-bundle"
+PUBLIC_REPO="index.docker.io"
+PUBLIC_REPO_PREFIX_NAME=jingtao18
+PUBLIC_FISSION_IMAGE_NAME="$(PUBLIC_REPO_PREFIX_NAME)/fission-bundle"
 PUBLIC_FISSION_IMAGE_TAG=$(PUBLIC_DEFAULT_TAG)
-PUBLIC_FISSION_BUILDER_IMAGE_NAME="jingtao/fission-builder"
+PUBLIC_FISSION_BUILDER_IMAGE_NAME="$(PUBLIC_REPO_PREFIX_NAME)/fission-builder"
 PUBLIC_FISSION_BUILDER_IMAGE_TAG=$(PUBLIC_DEFAULT_TAG)
-PUBLIC_FISSION_FETCHER_IMAGE_NAME="jingtao/fission-fetcher"
+PUBLIC_FISSION_FETCHER_IMAGE_NAME="$(PUBLIC_REPO_PREFIX_NAME)/fission-fetcher"
 PUBLIC_FISSION_FETCHER_IMAGE_TAG=$(PUBLIC_DEFAULT_TAG)
-PUBLIC_FISSION_PREUPGRADECHECKS_IMAGE_NAME="jingtao/fission-preupgradechecks"
+PUBLIC_FISSION_PREUPGRADECHECKS_IMAGE_NAME="$(PUBLIC_REPO_PREFIX_NAME)/fission-preupgradechecks"
 PUBLIC_FISSION_PREUPGRADECHECKS_IMAGE_TAG=$(PUBLIC_DEFAULT_TAG)
-PUBLIC_FISSION_FLUENTD_WRAPPER_IMAGE_NAME="jingtao/fission-fluentd-wrapper"
+PUBLIC_FISSION_FLUENTD_WRAPPER_IMAGE_NAME="$(PUBLIC_REPO_PREFIX_NAME)/fission-fluentd-wrapper"
 PUBLIC_FISSION_FLUENTD_WRAPPER_IMAGE_TAG=$(PUBLIC_DEFAULT_TAG)
 
-PUBLIC_FISSION_DATA_FLOW_VISUALIZATION_FRONTEND_IMAGE_NAME="jingtao/fission_data_flow_visualization_frontend"
+PUBLIC_FISSION_DATA_FLOW_VISUALIZATION_FRONTEND_IMAGE_NAME="$(PUBLIC_REPO_PREFIX_NAME)/fission_data_flow_visualization_frontend"
 PUBLIC_FISSION_DATA_FLOW_VISUALIZATION_FRONTEND_TAG=$(PUBLIC_DEFAULT_TAG)
-PUBLIC_FISSION_DATA_FLOW_VISUALIZATION_BACKEND_IMAGE_NAME="jingtao/fission_data_flow_visualization_backend"
+PUBLIC_FISSION_DATA_FLOW_VISUALIZATION_BACKEND_IMAGE_NAME="$(PUBLIC_REPO_PREFIX_NAME)/fission_data_flow_visualization_backend"
 PUBLIC_FISSION_DATA_FLOW_VISUALIZATION_BACKEND_TAG=$(PUBLIC_DEFAULT_TAG)
 
-PUBLIC_FISSION_ENV_PYTHON_IMAGE_NAME="jingtao/env/python"
+PUBLIC_FISSION_ENV_PYTHON_IMAGE_NAME="$(PUBLIC_REPO_PREFIX_NAME)/fission_env_python"
 PUBLIC_FISSION_ENV_PYTHON_IMAGE_TAG="v11"
 
 
 ## 上传镜像
-push_fission_images:
+push_fission_images: build_all
 	DOCKER_TLS_VERIFY=$(DOCKER_TLS_VERIFY) DOCKER_HOST=$(DOCKER_HOST) DOCKER_CERT_PATH=$(DOCKER_CERT_PATH) MINIKUBE_ACTIVE_DOCKERD=$(MINIKUBE_ACTIVE_DOCKERD) \
 	docker tag $(FISSION_IMAGE_NAME):$(FISSION_IMAGE_TAG) $(PUBLIC_REPO)/$(PUBLIC_FISSION_IMAGE_NAME):$(PUBLIC_FISSION_IMAGE_TAG) && \
 	DOCKER_TLS_VERIFY=$(DOCKER_TLS_VERIFY) DOCKER_HOST=$(DOCKER_HOST) DOCKER_CERT_PATH=$(DOCKER_CERT_PATH) MINIKUBE_ACTIVE_DOCKERD=$(MINIKUBE_ACTIVE_DOCKERD) \
