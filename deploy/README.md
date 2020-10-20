@@ -4,7 +4,7 @@
 
 | command  |  version   |
 | :------: | :--------: |
-| minikube |  v1.12.3   |
+| minikube |  v1.14.0   |
 | kubectl  |  v1.18.5   |
 |   helm   |   v3.2.4   |
 |  ktctl   | 0.0.13-rc7 |
@@ -19,8 +19,6 @@
 ```shell
 deploy$ make start_minikube
 ```
-
-*ps：此版本的minikube不能有效的设置集群的内存大小，可以通过停止集群，在虚拟机管理软件上手动调整内存的方式，来更改实际内存大小。*
 
 ### 获取集群信息
 

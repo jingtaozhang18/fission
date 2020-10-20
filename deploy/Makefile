@@ -48,7 +48,7 @@ minikube_start:
 			--kubernetes-version v1.18.3 \
 			--driver kvm2 \
 			--cpus 8 \
-			--memory 8g \
+			--memory 16g \
 			--disk-size 40g \
 			--container-runtime docker
 
